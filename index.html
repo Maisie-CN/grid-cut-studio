@@ -470,20 +470,37 @@
             await Clerk.load();
             const userButtonDiv = document.getElementById('user-button');
 
-            if (Clerk.user) {
-                // 修改此处：添加退出后的跳转逻辑
+            // 【优化点 1】: 添加状态监听器，处理第三方登录（如 Apple）后的自动跳转
+            Clerk.addListener(({ user }) => {
+                if (user) {
+                    handleUserStatus(user);
+                } else {
+                    Clerk.mountSignIn(userButtonDiv);
+                    applyLock('NOT_LOGGED_IN');
+                }
+            });
+
+            // 封装状态处理逻辑
+            function handleUserStatus(user) {
                 Clerk.mountUserButton(userButtonDiv, {
                     afterSignOutUrl: window.location.origin + window.location.pathname
                 });
                 
-                const userEmail = Clerk.user.primaryEmailAddress.emailAddress;
+                const userEmail = user.primaryEmailAddress.emailAddress;
                 
-                // 检查是否在白名单
+                // 检查白名单
                 if (MEMBER_WHITELIST.includes(userEmail)) {
                     applyLock('UNLOCK');
+                    console.log("权限验证通过:", userEmail);
                 } else {
                     applyLock('NOT_MEMBER');
+                    console.log("非会员用户:", userEmail);
                 }
+            }
+
+            // 【优化点 2】: 初始加载检查
+            if (Clerk.user) {
+                handleUserStatus(Clerk.user);
             } else {
                 Clerk.mountSignIn(userButtonDiv);
                 applyLock('NOT_LOGGED_IN');
