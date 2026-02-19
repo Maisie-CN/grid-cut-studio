@@ -481,7 +481,7 @@
             });
 
             function handleUser(user) {
-                Clerk.mountUserButton(userButtonDiv, { afterSignOutUrl: window.location.origin });
+                Clerk.mountUserButton(userButtonDiv, { afterSignOutUrl: window.location.href });
                 const email = user.primaryEmailAddress.emailAddress;
                 // 检查白名单
                 if (MEMBER_WHITELIST.includes(email)) {
