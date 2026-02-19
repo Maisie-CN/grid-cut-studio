@@ -465,30 +465,34 @@
         actionArea.prepend(tip);
     }
 
+    // --- Clerk 权限与状态监听逻辑 ---
     window.addEventListener('load', async function () {
         if (window.Clerk) {
             await Clerk.load();
             const userButtonDiv = document.getElementById('user-button');
 
-            // 使用监听器：专门解决 Apple 登录后不刷新的问题
+            // 【核心优化】：监听所有登录状态变化（解决 Apple 登录卡死）
             Clerk.addListener(({ user }) => {
                 if (user) {
-                    renderUserSession(user);
+                    renderLoggedInState(user);
                 } else {
+                    // 未登录状态
                     Clerk.mountSignIn(userButtonDiv);
                     applyLock('NOT_LOGGED_IN');
                 }
             });
 
-            function renderUserSession(user) {
-                // 挂载头像按钮并设置退出后返回首页
+            // 渲染登录后的状态
+            function renderLoggedInState(user) {
+                // 挂载头像按钮并设置退出后跳转
                 Clerk.mountUserButton(userButtonDiv, {
                     afterSignOutUrl: window.location.origin
                 });
                 
                 const userEmail = user.primaryEmailAddress.emailAddress;
-                
-                // 权限检查
+                console.log("当前登录邮箱:", userEmail);
+
+                // 检查是否在白名单 (对应你代码中的 MEMBER_WHITELIST)
                 if (MEMBER_WHITELIST.includes(userEmail)) {
                     applyLock('UNLOCK');
                 } else {
@@ -496,9 +500,9 @@
                 }
             }
 
-            // 初始检查逻辑
+            // 初始检查（页面第一次打开时）
             if (Clerk.user) {
-                renderUserSession(Clerk.user);
+                renderLoggedInState(Clerk.user);
             } else {
                 Clerk.mountSignIn(userButtonDiv);
                 applyLock('NOT_LOGGED_IN');
