@@ -465,48 +465,34 @@
         actionArea.prepend(tip);
     }
 
-    // --- Clerk 权限与状态监听逻辑 ---
     window.addEventListener('load', async function () {
         if (window.Clerk) {
             await Clerk.load();
             const userButtonDiv = document.getElementById('user-button');
 
-            // 【核心优化】：监听所有登录状态变化（解决 Apple 登录卡死）
+            // 自动感应登录：无论从哪跳回来，只要 Clerk 验证通过就解锁
             Clerk.addListener(({ user }) => {
                 if (user) {
-                    renderLoggedInState(user);
+                    handleUser(user);
                 } else {
-                    // 未登录状态
                     Clerk.mountSignIn(userButtonDiv);
                     applyLock('NOT_LOGGED_IN');
                 }
             });
 
-            // 渲染登录后的状态
-            function renderLoggedInState(user) {
-                // 挂载头像按钮并设置退出后跳转
-                Clerk.mountUserButton(userButtonDiv, {
-                    afterSignOutUrl: window.location.origin
-                });
-                
-                const userEmail = user.primaryEmailAddress.emailAddress;
-                console.log("当前登录邮箱:", userEmail);
-
-                // 检查是否在白名单 (对应你代码中的 MEMBER_WHITELIST)
-                if (MEMBER_WHITELIST.includes(userEmail)) {
+            function handleUser(user) {
+                Clerk.mountUserButton(userButtonDiv, { afterSignOutUrl: window.location.origin });
+                const email = user.primaryEmailAddress.emailAddress;
+                // 检查白名单
+                if (MEMBER_WHITELIST.includes(email)) {
                     applyLock('UNLOCK');
                 } else {
                     applyLock('NOT_MEMBER');
                 }
             }
 
-            // 初始检查（页面第一次打开时）
-            if (Clerk.user) {
-                renderLoggedInState(Clerk.user);
-            } else {
-                Clerk.mountSignIn(userButtonDiv);
-                applyLock('NOT_LOGGED_IN');
-            }
+            // 首次进入页面检查
+            if (Clerk.user) { handleUser(Clerk.user); }
         }
     });
 </script>
