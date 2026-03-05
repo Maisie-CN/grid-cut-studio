@@ -328,9 +328,19 @@
             </div>
             <div class="puzzle-actions">
                 <p>使用当前选中的切片（最多9张）重组为3×3拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前9张。<br><strong>拖动格子可交换位置，点击格子右上角按钮可上传图片替换。</strong></p>
+                
+                <!-- 👇 新增比例选择下拉框 -->
+                <div style="margin-bottom: 15px;">
+                    <label style="margin-right: 10px; color: var(--apple-gray);">下载比例：</label>
+                    <select id="puzzleRatioSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
+                        <option value="16:9" selected>16:9 横屏 (2560×1440)</option>
+                        <option value="9:16">9:16 竖屏 (1440×2560)</option>
+                    </select>
+                </div>
+                
                 <div style="display: flex; gap: 12px;">
                     <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图</button>
-                    <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图 (16:9 2K)</button>
+                    <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图</button>
                 </div>
             </div>
         </div>
@@ -853,21 +863,33 @@
         fileInput.click();
     }
 
-    // 更新拼图画布（16:9 2K分辨率）
+    // 更新拼图画布（根据所选比例）
     function updatePuzzleCanvas() {
         const cells = document.querySelectorAll('.puzzle-cell');
         if (cells.length === 0) return;
 
-        // 设置画布为16:9 2K分辨率 (2560x1440)
+        // 获取用户选择的比例
+        const ratioSelect = document.getElementById('puzzleRatioSelect');
+        let width, height;
+        if (ratioSelect && ratioSelect.value === '9:16') {
+            width = 1440;
+            height = 2560;
+        } else {
+            // 默认 16:9
+            width = 2560;
+            height = 1440;
+        }
+
+        // 创建画布
         puzzleCanvas = document.createElement('canvas');
-        puzzleCanvas.width = 2560;
-        puzzleCanvas.height = 1440;
+        puzzleCanvas.width = width;
+        puzzleCanvas.height = height;
         const ctx = puzzleCanvas.getContext('2d');
         ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, 2560, 1440);
+        ctx.fillRect(0, 0, width, height);
 
-        const cellWidth = 2560 / 3;   // 约 853.33
-        const cellHeight = 1440 / 3;  // 480
+        const cellWidth = width / 3;
+        const cellHeight = height / 3;
 
         cells.forEach((cell, index) => {
             const col = index % 3;
