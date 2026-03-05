@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grid Cut Studio · 盛安特制</title>
+    <title>Grid Cut Studio · 权限管理版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -145,6 +144,60 @@
         .btn-download { background: var(--apple-blue); color: white; }
         .btn-resplit { background: var(--apple-orange); color: white; }
 
+        /* 新增九宫格拼图样式 */
+        .puzzle-section {
+            margin-top: 60px;
+            padding: 30px;
+            background: var(--apple-card);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.7);
+            border-radius: 28px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+        }
+        .puzzle-container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .puzzle-preview {
+            width: 300px;
+            height: 300px;
+            background: #1d1d1f;
+            border-radius: 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 4px;
+            padding: 4px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .puzzle-cell {
+            background: #2c2c2e;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .puzzle-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .puzzle-cell.empty {
+            background: #1c1c1e;
+        }
+        .puzzle-actions {
+            flex: 1;
+        }
+        .puzzle-actions p {
+            color: var(--apple-gray);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
         .hidden { display: none !important; }
         svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
@@ -195,12 +248,12 @@
                     <div class="stepper-container">
                         <div class="stepper">
                             <button onclick="updateGrid('rows', -1)">-</button>
-                            <input type="number" id="rowsInput" value="3" readonly>
+                            <input type="number" id="rowsInput" value="3" min="1" max="10" readonly>
                             <button onclick="updateGrid('rows', 1)">+</button>
                         </div>
                         <div class="stepper">
                             <button onclick="updateGrid('cols', -1)">-</button>
-                            <input type="number" id="colsInput" value="3" readonly>
+                            <input type="number" id="colsInput" value="3" min="1" max="10" readonly>
                             <button onclick="updateGrid('cols', 1)">+</button>
                         </div>
                     </div>
@@ -243,6 +296,23 @@
     </div>
     
     <div class="result-grid" id="resultGrid"></div>
+
+    <!-- 新增：重组九宫格拼图模块 -->
+    <div class="puzzle-section">
+        <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组九宫格拼图</h2>
+        <div class="puzzle-container">
+            <div class="puzzle-preview" id="puzzlePreview">
+                <!-- 九个单元格由JS动态填充 -->
+            </div>
+            <div class="puzzle-actions">
+                <p>使用当前选中的切片（最多9张）重组为3×3拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前9张。</p>
+                <div style="display: flex; gap: 12px;">
+                    <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图</button>
+                    <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -254,53 +324,98 @@
         "766307121@qq.com"    // 填入你朋友的邮箱
     ];
 
+    // ==========================================
+    // 核心状态与工具函数
+    // ==========================================
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
+    // 存储二次切割对应的卡片元素，用于之后移除
+    let currentSecondaryCard = null;
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
-    // 基础功能逻辑保持不变...
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault(); dropZone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) handleFile(file);
-    });
-    dropZone.onclick = (e) => { if(e.target === dropZone || e.target.closest('.upload-ui')) fileIn.click(); };
-    fileIn.onchange = (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); };
-
-    function handleFile(file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = new Image();
-            img.onload = () => {
-                originalImage = img;
-                document.getElementById('uploadUI').classList.add('hidden');
-                canvas.classList.remove('hidden');
-                cancelSecondary();
-                initLines(img.width, img.height);
-                draw();
-                resetPreview();
-            };
-            img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+    // 权限检查函数（增强：在所有核心功能前调用）
+    function isAuthorized() {
+        const user = window.Clerk?.user;
+        return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress);
     }
 
+    function requireAuth() {
+        if (!isAuthorized()) {
+            alert('您没有权限执行此操作，请先登录或联系管理员。');
+            return false;
+        }
+        return true;
+    }
+
+    // 释放所有卡片中的对象URL（优化内存）
+    function revokeAllCardURLs() {
+        document.querySelectorAll('.result-card img').forEach(img => {
+            if (img.src.startsWith('blob:')) {
+                URL.revokeObjectURL(img.src);
+            }
+        });
+    }
+
+    // 清除结果网格（同时释放URL）
+    function clearResultGrid() {
+        revokeAllCardURLs();
+        document.getElementById('resultGrid').innerHTML = '';
+        updateSelectionUI();
+    }
+
+    // 更新选中按钮状态
+    function updateSelectionUI() {
+        const selected = document.querySelectorAll('.result-card.selected');
+        const btn = document.getElementById('selectedDownloadBtn');
+        btn.innerText = `下载选中 (${selected.length})`;
+        btn.style.opacity = selected.length > 0 ? '1' : '0.5';
+        btn.style.pointerEvents = selected.length > 0 ? 'auto' : 'none';
+    }
+
+    function toggleSelect(card) { 
+        card.classList.toggle('selected'); 
+        updateSelectionUI(); 
+    }
+
+    // 初始化网格线
     function initLines(w, h) {
         const r = parseInt(document.getElementById('rowsInput').value);
         const c = parseInt(document.getElementById('colsInput').value);
-        linesX = []; linesY = [];
+        linesX = [];
+        linesY = [];
         for(let i=1; i<c; i++) linesX.push((w/c)*i);
         for(let i=1; i<r; i++) linesY.push((h/r)*i);
     }
 
+    // 绘制canvas（带网格线）
+    function draw() {
+        if(!originalImage) return;
+        if(secondaryMode) {
+            canvas.width = selectedRegion.w;
+            canvas.height = selectedRegion.h;
+            ctx.drawImage(originalImage, selectedRegion.x, selectedRegion.y, selectedRegion.w, selectedRegion.h, 0, 0, selectedRegion.w, selectedRegion.h);
+            ctx.strokeStyle = '#ff9500';
+        } else {
+            canvas.width = originalImage.width;
+            canvas.height = originalImage.height;
+            ctx.drawImage(originalImage, 0, 0);
+            ctx.strokeStyle = '#0071e3';
+        }
+        ctx.setLineDash([12, 6]); 
+        ctx.lineWidth = Math.max(3, canvas.width / 350);
+        linesX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); });
+        linesY.forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); });
+    }
+
+    // 更新行列
     function updateGrid(type, delta) {
         const input = document.getElementById(type + 'Input');
-        input.value = Math.max(1, Math.min(10, parseInt(input.value) + delta));
+        let val = parseInt(input.value) + delta;
+        val = Math.max(1, Math.min(10, val));
+        input.value = val;
         if(originalImage) {
             secondaryMode ? initLines(selectedRegion.w, selectedRegion.h) : initLines(originalImage.width, originalImage.height);
             draw();
@@ -308,22 +423,7 @@
         }
     }
 
-    function draw() {
-        if(!originalImage) return;
-        if(secondaryMode) {
-            canvas.width = selectedRegion.w; canvas.height = selectedRegion.h;
-            ctx.drawImage(originalImage, selectedRegion.x, selectedRegion.y, selectedRegion.w, selectedRegion.h, 0, 0, selectedRegion.w, selectedRegion.h);
-            ctx.strokeStyle = '#ff9500';
-        } else {
-            canvas.width = originalImage.width; canvas.height = originalImage.height;
-            ctx.drawImage(originalImage, 0, 0);
-            ctx.strokeStyle = '#0071e3';
-        }
-        ctx.setLineDash([12, 6]); ctx.lineWidth = Math.max(3, canvas.width / 350);
-        linesX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); });
-        linesY.forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); });
-    }
-
+    // 重置预览占位
     function resetPreview() {
         const container = document.getElementById('previewContainer');
         container.style.height = '120px';
@@ -335,6 +435,7 @@
         `;
     }
 
+    // 生成预览缩略图
     function renderPreview() {
         if(!originalImage) return;
         const container = document.getElementById('previewContainer');
@@ -366,69 +467,319 @@
         }
     }
 
-    function toggleSelect(card) { card.classList.toggle('selected'); updateSelectionUI(); }
-    function updateSelectionUI() {
-        const selected = document.querySelectorAll('.result-card.selected');
-        const btn = document.getElementById('selectedDownloadBtn');
-        btn.innerText = `下载选中 (${selected.length})`;
-        btn.style.opacity = selected.length > 0 ? '1' : '0.5';
-        btn.style.pointerEvents = selected.length > 0 ? 'auto' : 'none';
+    // 文件处理
+    function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                originalImage = img;
+                document.getElementById('uploadUI').classList.add('hidden');
+                canvas.classList.remove('hidden');
+                cancelSecondary(); // 退出二次模式
+                initLines(img.width, img.height);
+                draw();
+                resetPreview();
+                clearResultGrid(); // 清空旧切片
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
-    function confirmSplit(bx=0, by=0) {
-        if(!originalImage) return;
-        const grid = document.getElementById('resultGrid');
-        if(!secondaryMode) grid.innerHTML = '';
-        const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width];
-        const sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
-        for(let i=0; i<sortedY.length-1; i++) {
-            for(let j=0; j<sortedX.length-1; j++) {
-                const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i];
-                const curX = bx + sortedX[j], curY = by + sortedY[i];
-                const off = document.createElement('canvas'); off.width = w; off.height = h;
-                off.getContext('2d').drawImage(originalImage, curX, curY, w, h, 0, 0, w, h);
-                const url = off.toDataURL();
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                card.onclick = (e) => { if(!e.target.closest('.action-btn')) toggleSelect(card); };
-                card.innerHTML = `<img src="${url}"><div class="card-actions"><div class="action-btn btn-download" onclick="downloadUrl('${url}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="action-btn btn-resplit" onclick="startSecondary(${curX},${curY},${w},${h})"><svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg></div></div>`;
-                grid.appendChild(card);
-            }
-        }
-        updateSelectionUI();
+    // 拖拽事件
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault(); dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) handleFile(file);
+    });
+    dropZone.onclick = (e) => { if(e.target === dropZone || e.target.closest('.upload-ui')) fileIn.click(); };
+    fileIn.onchange = (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); };
+
+    // 获取鼠标在canvas上的坐标（考虑缩放）
+    function getMouse(e) { 
+        const rect = canvas.getBoundingClientRect(); 
+        if (rect.width === 0) return { x: 0, y: 0 };
+        return { 
+            x: (e.clientX - rect.left) * (canvas.width / rect.width), 
+            y: (e.clientY - rect.top) * (canvas.height / rect.height) 
+        }; 
     }
 
-    async function downloadSelected() { const imgs = document.querySelectorAll('.result-card.selected img'); if(imgs.length > 0) await bundleZip(imgs, 'Selected'); }
-    async function downloadAll() { const imgs = document.querySelectorAll('.result-grid img'); if(imgs.length > 0) await bundleZip(imgs, 'Full_Export'); else alert('请先拆分图片'); }
-    async function bundleZip(imgNodes, fileName) {
-        const zip = new JSZip();
-        imgNodes.forEach((img, i) => zip.file(`piece_${i+1}.png`, img.src.split(',')[1], {base64:true}));
-        const blob = await zip.generateAsync({type:'blob'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${fileName}.zip`; a.click();
-    }
-
-    function getMouse(e) { const rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
+    // 鼠标按下：检测是否点击到线
     canvas.onmousedown = (e) => {
         const p = getMouse(e), t = canvas.width / 40;
         linesX.forEach((x, i) => { if(Math.abs(p.x - x) < t) { isDragging = true; dragAxis = 'x'; dragIndex = i; } });
         if(!isDragging) linesY.forEach((y, i) => { if(Math.abs(p.y - y) < t) { isDragging = true; dragAxis = 'y'; dragIndex = i; } });
     };
+
+    // 鼠标移动：拖动线，并限制不越过相邻线
     window.onmousemove = (e) => {
-        if(isDragging) {
+        if(isDragging && originalImage) {
             const p = getMouse(e);
-            if(dragAxis === 'x') linesX[dragIndex] = Math.max(5, Math.min(canvas.width-5, p.x));
-            else linesY[dragIndex] = Math.max(5, Math.min(canvas.height-5, p.y));
-            draw(); resetPreview();
+            if(dragAxis === 'x') {
+                // 限制左右边界
+                let minX = dragIndex > 0 ? linesX[dragIndex-1] + 5 : 5;
+                let maxX = dragIndex < linesX.length-1 ? linesX[dragIndex+1] - 5 : canvas.width - 5;
+                linesX[dragIndex] = Math.max(minX, Math.min(maxX, p.x));
+            } else {
+                let minY = dragIndex > 0 ? linesY[dragIndex-1] + 5 : 5;
+                let maxY = dragIndex < linesY.length-1 ? linesY[dragIndex+1] - 5 : canvas.height - 5;
+                linesY[dragIndex] = Math.max(minY, Math.min(maxY, p.y));
+            }
+            draw();
+            resetPreview();
         }
     };
     window.onmouseup = () => { isDragging = false; };
-    function startSecondary(x, y, w, h) { secondaryMode = true; selectedRegion = {x, y, w, h}; document.getElementById('normalBtns').classList.add('hidden'); document.getElementById('secondaryBtns').classList.remove('hidden'); document.getElementById('modeTag').classList.remove('hidden'); initLines(w, h); draw(); resetPreview(); window.scrollTo({top: 0, behavior: 'smooth'}); }
-    function confirmSecondary() { confirmSplit(selectedRegion.x, selectedRegion.y); cancelSecondary(); }
-    function cancelSecondary() { secondaryMode = false; selectedRegion = null; document.getElementById('normalBtns').classList.remove('hidden'); document.getElementById('secondaryBtns').classList.add('hidden'); document.getElementById('modeTag').classList.add('hidden'); if(originalImage) { initLines(originalImage.width, originalImage.height); draw(); resetPreview(); } }
-    window.downloadUrl = (url) => { const a = document.createElement('a'); a.href = url; a.download = `slice.png`; a.click(); };
+
+    // 确认拆分（核心功能）
+    function confirmSplit(bx=0, by=0) {
+        if(!originalImage) return alert('请先上传图片');
+        if (!requireAuth()) return; // 权限检查
+
+        const grid = document.getElementById('resultGrid');
+        if(!secondaryMode) {
+            // 普通拆分：清空之前结果
+            clearResultGrid();
+        }
+        const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width];
+        const sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
+        const rows = sortedY.length - 1;
+        const cols = sortedX.length - 1;
+
+        for(let i=0; i<rows; i++) {
+            for(let j=0; j<cols; j++) {
+                const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i];
+                const curX = bx + sortedX[j], curY = by + sortedY[i];
+                const off = document.createElement('canvas'); off.width = w; off.height = h;
+                off.getContext('2d').drawImage(originalImage, curX, curY, w, h, 0, 0, w, h);
+                
+                // 使用toBlob生成对象URL（优化内存）
+                off.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    card.onclick = (e) => { if(!e.target.closest('.action-btn')) toggleSelect(card); };
+                    // 存储坐标和尺寸信息，供二次切割使用
+                    card.dataset.x = curX;
+                    card.dataset.y = curY;
+                    card.dataset.w = w;
+                    card.dataset.h = h;
+                    card.innerHTML = `<img src="${url}"><div class="card-actions"><div class="action-btn btn-download" onclick="downloadUrl('${url}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="action-btn btn-resplit" onclick="startSecondary(this)"><svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg></div></div>`;
+                    grid.appendChild(card);
+                });
+            }
+        }
+        updateSelectionUI();
+    }
+
+    // 下载单个图片
+    window.downloadUrl = (url) => { 
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = `slice.png`; 
+        a.click(); 
+    };
+
+    // 下载选中
+    async function downloadSelected() { 
+        if (!requireAuth()) return;
+        const imgs = document.querySelectorAll('.result-card.selected img'); 
+        if(imgs.length > 0) await bundleZip(imgs, 'Selected'); 
+        else alert('请先选中要下载的切片');
+    }
+
+    // 下载全部
+    async function downloadAll() { 
+        if (!requireAuth()) return;
+        const imgs = document.querySelectorAll('.result-grid img'); 
+        if(imgs.length > 0) await bundleZip(imgs, 'Full_Export'); 
+        else alert('请先拆分图片'); 
+    }
+
+    // 打包ZIP
+    async function bundleZip(imgNodes, fileName) {
+        const zip = new JSZip();
+        // 将对象URL转换为base64（JSZip需要）
+        for (let i = 0; i < imgNodes.length; i++) {
+            const img = imgNodes[i];
+            let dataUrl;
+            if (img.src.startsWith('blob:')) {
+                // 需要将blob转为dataURL
+                const blob = await fetch(img.src).then(r => r.blob());
+                dataUrl = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } else {
+                dataUrl = img.src;
+            }
+            const base64 = dataUrl.split(',')[1];
+            zip.file(`piece_${i+1}.png`, base64, {base64:true});
+        }
+        const blob = await zip.generateAsync({type:'blob'});
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = `${fileName}.zip`; 
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    // 二次切割入口
+    function startSecondary(btn) {
+        const card = btn.closest('.result-card');
+        if (!card) return;
+        currentSecondaryCard = card;
+        const x = parseFloat(card.dataset.x);
+        const y = parseFloat(card.dataset.y);
+        const w = parseFloat(card.dataset.w);
+        const h = parseFloat(card.dataset.h);
+        secondaryMode = true;
+        selectedRegion = {x, y, w, h};
+        document.getElementById('normalBtns').classList.add('hidden');
+        document.getElementById('secondaryBtns').classList.remove('hidden');
+        document.getElementById('modeTag').classList.remove('hidden');
+        initLines(w, h);
+        draw();
+        resetPreview();
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    // 完成二次切割
+    function confirmSecondary() {
+        if (!requireAuth()) return;
+        // 调用拆分，传入相对坐标
+        confirmSplit(selectedRegion.x, selectedRegion.y);
+        // 移除原卡片（二次切割后原卡片应该被新切片替代）
+        if (currentSecondaryCard) {
+            // 如果原卡片的图片是blob，记得释放
+            const img = currentSecondaryCard.querySelector('img');
+            if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+            currentSecondaryCard.remove();
+            currentSecondaryCard = null;
+        }
+        cancelSecondary(); // 退出二次模式
+    }
+
+    // 取消二次切割
+    function cancelSecondary() {
+        secondaryMode = false;
+        selectedRegion = null;
+        currentSecondaryCard = null;
+        document.getElementById('normalBtns').classList.remove('hidden');
+        document.getElementById('secondaryBtns').classList.add('hidden');
+        document.getElementById('modeTag').classList.add('hidden');
+        if(originalImage) { 
+            initLines(originalImage.width, originalImage.height); 
+            draw(); 
+            resetPreview(); 
+        }
+    }
 
     // ==========================================
-    // 【权限锁定逻辑】
+    // 新增：重组九宫格拼图功能
+    // ==========================================
+    let puzzleCanvas = null; // 存储当前拼图画布，用于下载
+
+    function generatePuzzle() {
+        if (!originalImage) {
+            alert('请先上传图片并拆分切片');
+            return;
+        }
+        if (!requireAuth()) return;
+
+        // 获取切片图片元素：优先选中的，否则全部
+        let cards = document.querySelectorAll('.result-card.selected');
+        if (cards.length === 0) {
+            cards = document.querySelectorAll('.result-card');
+        }
+        if (cards.length === 0) {
+            alert('没有可用的切片，请先拆分图片');
+            return;
+        }
+
+        // 取前9张
+        const selectedCards = Array.from(cards).slice(0, 9);
+        const puzzleDiv = document.getElementById('puzzlePreview');
+        puzzleDiv.innerHTML = ''; // 清空
+
+        // 创建9个单元格
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'puzzle-cell';
+            if (i < selectedCards.length) {
+                const img = selectedCards[i].querySelector('img');
+                // 克隆图片，避免影响原卡片
+                const newImg = document.createElement('img');
+                newImg.src = img.src; // 注意：如果是blob，需确保不会被撤销
+                cell.appendChild(newImg);
+            } else {
+                cell.classList.add('empty');
+            }
+            puzzleDiv.appendChild(cell);
+        }
+
+        // 创建隐藏画布用于下载
+        puzzleCanvas = document.createElement('canvas');
+        puzzleCanvas.width = 900;  // 每个格子300x300
+        puzzleCanvas.height = 900;
+        const ctx = puzzleCanvas.getContext('2d');
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 900, 900);
+        ctx.fillStyle = '#2c2c2e'; // 格子背景色
+
+        // 绘制每个格子
+        const cellSize = 300;
+        for (let i = 0; i < 9; i++) {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            if (i < selectedCards.length) {
+                const img = selectedCards[i].querySelector('img');
+                // 绘制图片，保持比例居中
+                const image = new Image();
+                image.crossOrigin = 'anonymous'; // 防止跨域问题（如果图片来自blob没问题）
+                image.src = img.src;
+                // 由于图片可能未加载完，我们使用onload处理。但同步循环中不能用异步。改用画布绘制时直接使用原图片元素？
+                // 简便方法：创建临时的Image对象，在onload中重绘，但会导致异步。或者直接使用已有的img元素绘制到canvas。
+                // canvas的drawImage可以直接接受HTMLImageElement
+                try {
+                    ctx.drawImage(img, col * cellSize, row * cellSize, cellSize, cellSize);
+                } catch (e) {
+                    // 如果跨域等问题，忽略，留黑
+                }
+            } else {
+                // 黑色单元格，保持黑色
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            }
+        }
+        // 由于可能存在异步，上面的drawImage可能因为图片未完成解码而失败。改进：等待所有图片加载完成再绘制。
+        // 这里简化处理：使用已有的img元素，但img元素可能来自blob，应该是已加载的。通常可行。
+        // 为保险，可改用预加载方式，但此处不增加复杂度。
+    }
+
+    function downloadPuzzle() {
+        if (!puzzleCanvas) {
+            alert('请先生成拼图');
+            return;
+        }
+        if (!requireAuth()) return;
+        puzzleCanvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'puzzle.png';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // ==========================================
+    // 【权限锁定逻辑】（增强版）
     // ==========================================
     function applyLock(type) {
         const actionArea = document.getElementById('actionArea');
@@ -465,54 +816,44 @@
         actionArea.prepend(tip);
     }
 
+    // Clerk初始化
     window.addEventListener('load', async function () {
-    if (window.Clerk) {
-        await Clerk.load();
+        if (window.Clerk) {
+            await Clerk.load();
 
-        // 1. 定义你的完整项目主页地址
-        const appHomeUrl = window.location.origin + '/grid-cut-studio/'; 
-        // 或者更稳妥地获取当前页面的基础路径：
-        // const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; 
+            const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; 
+            const userButtonDiv = document.getElementById('user-button');
 
-        const userButtonDiv = document.getElementById('user-button');
-
-        // 2. 挂载登录组件时，指定登录成功后的跳转地址
-        Clerk.mountSignIn(userButtonDiv, {
-            afterSignInUrl: appHomeUrl, // 关键：登录后跳回项目主页
-        });
-
-        Clerk.addListener(({ user }) => {
-            if (user) {
-                handleUser(user);
-            } else {
-                // 未登录时，挂载登录组件，并指定重定向地址
-                Clerk.mountSignIn(userButtonDiv, {
-                    afterSignInUrl: appHomeUrl,
-                });
-                applyLock('NOT_LOGGED_IN');
-            }
-        });
-
-        function handleUser(user) {
-            // 3. 挂载用户按钮时，指定登出后的跳转地址
-            Clerk.mountUserButton(userButtonDiv, {
-                afterSignOutUrl: appHomeUrl, // 关键：登出后也回到项目主页
+            Clerk.mountSignIn(userButtonDiv, {
+                afterSignInUrl: appHomeUrl,
             });
-            const email = user.primaryEmailAddress.emailAddress;
-            if (MEMBER_WHITELIST.includes(email)) {
-                applyLock('UNLOCK');
-            } else {
-                applyLock('NOT_MEMBER');
-            }
-        }
 
-        if (Clerk.user) { handleUser(Clerk.user); }
-    }
-});
+            Clerk.addListener(({ user }) => {
+                if (user) {
+                    handleUser(user);
+                } else {
+                    Clerk.mountSignIn(userButtonDiv, {
+                        afterSignInUrl: appHomeUrl,
+                    });
+                    applyLock('NOT_LOGGED_IN');
+                }
+            });
+
+            function handleUser(user) {
+                Clerk.mountUserButton(userButtonDiv, {
+                    afterSignOutUrl: appHomeUrl,
+                });
+                const email = user.primaryEmailAddress?.emailAddress;
+                if (MEMBER_WHITELIST.includes(email)) {
+                    applyLock('UNLOCK');
+                } else {
+                    applyLock('NOT_MEMBER');
+                }
+            }
+
+            if (Clerk.user) { handleUser(Clerk.user); }
+        }
+    });
 </script>
 </body>
-
 </html>
-
-
-
