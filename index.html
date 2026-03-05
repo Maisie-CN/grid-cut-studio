@@ -180,6 +180,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative; /* 用于绝对定位上传按钮 */
         }
         .puzzle-cell img {
             width: 100%;
@@ -188,6 +189,27 @@
         }
         .puzzle-cell.empty {
             background: #1c1c1e;
+        }
+        .puzzle-upload-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            border: none;
+            z-index: 10;
+        }
+        .puzzle-upload-btn:hover {
+            background: var(--apple-blue);
         }
         .puzzle-actions {
             flex: 1;
@@ -305,10 +327,10 @@
                 <!-- 九个单元格由JS动态填充 -->
             </div>
             <div class="puzzle-actions">
-                <p>使用当前选中的切片（最多9张）重组为3×3拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前9张。</p>
+                <p>使用当前选中的切片（最多9张）重组为3×3拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前9张。<br><strong>拖动格子可交换位置，点击格子右上角按钮可上传图片替换。</strong></p>
                 <div style="display: flex; gap: 12px;">
                     <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图</button>
-                    <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图</button>
+                    <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图 (16:9 2K)</button>
                 </div>
             </div>
         </div>
@@ -330,8 +352,10 @@
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
-    // 存储二次切割对应的卡片元素，用于之后移除
-    let currentSecondaryCard = null;
+    let currentSecondaryCard = null; // 存储二次切割对应的卡片元素，用于之后移除
+    // 新增：拼图拖拽相关
+    let draggedCell = null; // 当前正在拖拽的格子
+    let puzzleCanvas = null; // 存储当前拼图画布，用于下载
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
@@ -681,10 +705,10 @@
     }
 
     // ==========================================
-    // 新增：重组九宫格拼图功能
+    // 新增：重组九宫格拼图功能（支持拖拽与上传）
     // ==========================================
-    let puzzleCanvas = null; // 存储当前拼图画布，用于下载
 
+    // 生成拼图
     function generatePuzzle() {
         if (!originalImage) {
             alert('请先上传图片并拆分切片');
@@ -702,72 +726,173 @@
             return;
         }
 
-        // 取前9张
+        // 取前9张，不足留空
         const selectedCards = Array.from(cards).slice(0, 9);
         const puzzleDiv = document.getElementById('puzzlePreview');
         puzzleDiv.innerHTML = ''; // 清空
 
-        // 创建9个单元格
+        // 为整个拼图容器设置拖拽事件（防止默认）
+        puzzleDiv.setAttribute('ondragover', 'event.preventDefault()');
+        puzzleDiv.setAttribute('ondrop', 'handlePuzzleDrop(event)');
+
+        // 创建9个格子
         for (let i = 0; i < 9; i++) {
             const cell = document.createElement('div');
             cell.className = 'puzzle-cell';
+            cell.setAttribute('draggable', 'true');
+            cell.setAttribute('data-index', i);
+            cell.setAttribute('ondragstart', 'dragStart(event)');
+            cell.setAttribute('ondragover', 'event.preventDefault()');
+            cell.setAttribute('ondrop', 'dropOnCell(event)');
+
+            // 添加图片内容
             if (i < selectedCards.length) {
                 const img = selectedCards[i].querySelector('img');
-                // 克隆图片，避免影响原卡片
                 const newImg = document.createElement('img');
-                newImg.src = img.src; // 注意：如果是blob，需确保不会被撤销
+                newImg.src = img.src; // 直接使用原图片src（可能是blob或dataURL）
                 cell.appendChild(newImg);
             } else {
-                cell.classList.add('empty');
+                cell.classList.add('empty'); // 黑色背景
             }
+
+            // 添加上传按钮
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'puzzle-upload-btn';
+            uploadBtn.innerHTML = '📁';
+            uploadBtn.onclick = (e) => {
+                e.stopPropagation(); // 防止触发格子点击
+                triggerFileUpload(cell);
+            };
+            cell.appendChild(uploadBtn);
+
             puzzleDiv.appendChild(cell);
         }
 
-        // 创建隐藏画布用于下载
-        puzzleCanvas = document.createElement('canvas');
-        puzzleCanvas.width = 900;  // 每个格子300x300
-        puzzleCanvas.height = 900;
-        const ctx = puzzleCanvas.getContext('2d');
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, 900, 900);
-        ctx.fillStyle = '#2c2c2e'; // 格子背景色
-
-        // 绘制每个格子
-        const cellSize = 300;
-        for (let i = 0; i < 9; i++) {
-            const col = i % 3;
-            const row = Math.floor(i / 3);
-            if (i < selectedCards.length) {
-                const img = selectedCards[i].querySelector('img');
-                // 绘制图片，保持比例居中
-                const image = new Image();
-                image.crossOrigin = 'anonymous'; // 防止跨域问题（如果图片来自blob没问题）
-                image.src = img.src;
-                // 由于图片可能未加载完，我们使用onload处理。但同步循环中不能用异步。改用画布绘制时直接使用原图片元素？
-                // 简便方法：创建临时的Image对象，在onload中重绘，但会导致异步。或者直接使用已有的img元素绘制到canvas。
-                // canvas的drawImage可以直接接受HTMLImageElement
-                try {
-                    ctx.drawImage(img, col * cellSize, row * cellSize, cellSize, cellSize);
-                } catch (e) {
-                    // 如果跨域等问题，忽略，留黑
-                }
-            } else {
-                // 黑色单元格，保持黑色
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-            }
-        }
-        // 由于可能存在异步，上面的drawImage可能因为图片未完成解码而失败。改进：等待所有图片加载完成再绘制。
-        // 这里简化处理：使用已有的img元素，但img元素可能来自blob，应该是已加载的。通常可行。
-        // 为保险，可改用预加载方式，但此处不增加复杂度。
+        // 更新拼图画布（用于下载）
+        updatePuzzleCanvas();
     }
 
+    // 拖拽开始
+    function dragStart(event) {
+        draggedCell = event.target.closest('.puzzle-cell');
+        event.dataTransfer.setData('text/plain', draggedCell.dataset.index);
+        event.dataTransfer.effectAllowed = 'move';
+    }
+
+    // 拖拽放置（在格子上释放）
+    function dropOnCell(event) {
+        event.preventDefault();
+        const targetCell = event.target.closest('.puzzle-cell');
+        if (!targetCell || !draggedCell || targetCell === draggedCell) return;
+
+        // 交换两个格子的内部HTML（图片 + 上传按钮）
+        const tempHTML = targetCell.innerHTML;
+        targetCell.innerHTML = draggedCell.innerHTML;
+        draggedCell.innerHTML = tempHTML;
+
+        // 重新绑定上传按钮的事件（因为innerHTML被替换，原绑定丢失）
+        rebindUploadButtons(targetCell);
+        rebindUploadButtons(draggedCell);
+
+        // 更新拼图画布
+        updatePuzzleCanvas();
+
+        draggedCell = null;
+    }
+
+    // 重新绑定格子内的上传按钮事件
+    function rebindUploadButtons(cell) {
+        const btn = cell.querySelector('.puzzle-upload-btn');
+        if (btn) {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                triggerFileUpload(cell);
+            };
+        }
+    }
+
+    // 触发文件上传替换格子内容
+    function triggerFileUpload(cell) {
+        // 创建一个临时的文件输入
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    // 清空格子内容
+                    cell.innerHTML = '';
+                    // 创建新图片
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    cell.appendChild(img);
+                    // 重新添加上传按钮
+                    const uploadBtn = document.createElement('button');
+                    uploadBtn.className = 'puzzle-upload-btn';
+                    uploadBtn.innerHTML = '📁';
+                    uploadBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        triggerFileUpload(cell);
+                    };
+                    cell.appendChild(uploadBtn);
+                    cell.classList.remove('empty'); // 移除黑色背景样式
+
+                    // 更新拼图画布
+                    updatePuzzleCanvas();
+                };
+                reader.readAsDataURL(file);
+            }
+            // 用完移除临时元素
+            document.body.removeChild(fileInput);
+        };
+        fileInput.click();
+    }
+
+    // 更新拼图画布（16:9 2K分辨率）
+    function updatePuzzleCanvas() {
+        const cells = document.querySelectorAll('.puzzle-cell');
+        if (cells.length === 0) return;
+
+        // 设置画布为16:9 2K分辨率 (2560x1440)
+        puzzleCanvas = document.createElement('canvas');
+        puzzleCanvas.width = 2560;
+        puzzleCanvas.height = 1440;
+        const ctx = puzzleCanvas.getContext('2d');
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 2560, 1440);
+
+        const cellWidth = 2560 / 3;   // 约 853.33
+        const cellHeight = 1440 / 3;  // 480
+
+        cells.forEach((cell, index) => {
+            const col = index % 3;
+            const row = Math.floor(index / 3);
+            const img = cell.querySelector('img');
+            if (img) {
+                // 将图片拉伸绘制到整个格子
+                ctx.drawImage(img, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+            } else {
+                // 空单元格保持黑色
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+            }
+        });
+    }
+
+    // 下载拼图
     function downloadPuzzle() {
         if (!puzzleCanvas) {
             alert('请先生成拼图');
             return;
         }
         if (!requireAuth()) return;
+        // 先更新画布，保证内容最新
+        updatePuzzleCanvas();
         puzzleCanvas.toBlob((blob) => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -777,6 +902,10 @@
             URL.revokeObjectURL(url);
         });
     }
+
+    // 防止页面默认拖拽行为
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => e.preventDefault());
 
     // ==========================================
     // 【权限锁定逻辑】（增强版）
