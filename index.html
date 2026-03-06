@@ -234,23 +234,15 @@
 </head>
 <body>
 
-<div class="container" style="position: relative;">
-    <!-- 头像固定在右上角 -->
-    <div id="user-button" style="position: absolute; top: 30px; right: 20px; z-index: 100;"></div>
-
-    <!-- 标题区（居中，右侧留出头像空间） -->
-    <header style="text-align: center; padding: 50px 120px 30px 0;">
-        <h1 style="font-size: 42px; font-weight: 600; letter-spacing: -0.02em; margin: 0;">Grid Cut Studio</h1>
-        <p style="font-size: 18px; color: var(--apple-gray); margin-top: 8px;">专业、纯粹的影像拆解工具 · 有有特制</p>
+<div class="container">
+    <header>
+        <h1>Grid Cut Studio</h1>
+        <p>专业、纯粹的影像拆解工具</p>
     </header>
 
-    <!-- 注意：原代码中紧随其后的那个头像容器 <div style="display: flex; justify-content: center; ..."> 必须删除！ -->
-    <!-- 下面保持原样：玻璃卡片、切片区域、拼图区域等 -->
-    
-        ...
-
-    <!-- 注意：原来的头像容器 div 已删除 -->
-    ...
+    <div style="display: flex; justify-content: center; margin-bottom: 24px; min-height: 40px;">
+        <div id="user-button"></div>
+    </div>
 
     <div class="glass-card">
         <div class="studio-layout">
@@ -361,8 +353,7 @@
     // ==========================================
     const MEMBER_WHITELIST = [
         "zhuangshanmeizi@gmail.com", // 填入你的邮箱
-        "766307121@qq.com"，
-        "424198398@qq.com"// 填入你朋友的邮箱
+        "766307121@qq.com"    // 填入你朋友的邮箱
     ];
 
     // ==========================================
