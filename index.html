@@ -771,7 +771,7 @@
             // 添加上传按钮
             const uploadBtn = document.createElement('button');
             uploadBtn.className = 'puzzle-upload-btn';
-            uploadBtn.innerHTML = '📁';
+            uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
             uploadBtn.onclick = (e) => {
                 e.stopPropagation(); // 防止触发格子点击
                 triggerFileUpload(cell);
