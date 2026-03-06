@@ -235,11 +235,13 @@
 <body>
 
 <div class="container">
+    <!-- 标题区（居中，副标题已添加“有有特制”） -->
     <header>
         <h1>Grid Cut Studio</h1>
-        <p>专业、纯粹的影像拆解工具</p>
+        <p>专业、纯粹的影像拆解工具 · 有有特制</p>
     </header>
 
+    <!-- 头像容器（保持原位置：标题下方居中） -->
     <div style="display: flex; justify-content: center; margin-bottom: 24px; min-height: 40px;">
         <div id="user-button"></div>
     </div>
@@ -319,7 +321,7 @@
     
     <div class="result-grid" id="resultGrid"></div>
 
-    <!-- 新增：重组九宫格拼图模块 -->
+    <!-- 重组九宫格拼图模块（包含所有新功能） -->
     <div class="puzzle-section">
         <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组九宫格拼图</h2>
         <div class="puzzle-container">
@@ -329,7 +331,7 @@
             <div class="puzzle-actions">
                 <p>使用当前选中的切片（最多9张）重组为3×3拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前9张。<br><strong>拖动格子可交换位置，点击格子右上角按钮可上传图片替换。</strong></p>
                 
-                <!-- 👇 新增比例选择下拉框 -->
+                <!-- 比例选择下拉框 -->
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">下载比例：</label>
                     <select id="puzzleRatioSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -352,8 +354,9 @@
     // 【会员管理中心】在此修改允许使用的邮箱
     // ==========================================
     const MEMBER_WHITELIST = [
-        "zhuangshanmeizi@gmail.com", // 填入你的邮箱
-        "766307121@qq.com"    // 填入你朋友的邮箱
+        "zhuangshanmeizi@gmail.com",
+        "766307121@qq.com",
+        "424198398@qq.com"  // 如果需要添加更多邮箱，请按格式添加，注意逗号
     ];
 
     // ==========================================
@@ -363,14 +366,14 @@
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
     let currentSecondaryCard = null; // 存储二次切割对应的卡片元素，用于之后移除
-    // 新增：拼图拖拽相关
+    // 拼图拖拽相关
     let draggedCell = null; // 当前正在拖拽的格子
     let puzzleCanvas = null; // 存储当前拼图画布，用于下载
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
-    // 权限检查函数（增强：在所有核心功能前调用）
+    // 权限检查函数
     function isAuthorized() {
         const user = window.Clerk?.user;
         return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress);
@@ -715,7 +718,7 @@
     }
 
     // ==========================================
-    // 新增：重组九宫格拼图功能（支持拖拽与上传）
+    // 重组九宫格拼图功能（支持拖拽与上传）
     // ==========================================
 
     // 生成拼图
