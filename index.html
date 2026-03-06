@@ -234,16 +234,17 @@
 </head>
 <body>
 
-<div class="container">
-    <header>
+<div class="container" style="position: relative;">
+    <!-- 头像固定在右上角 -->
+    <div id="user-button" style="position: absolute; top: 20px; right: 20px; z-index: 100;"></div>
+
+    <header style="padding-right: 100px;">
         <h1>Grid Cut Studio</h1>
-        <p>专业、纯粹的影像拆解工具</p>
-        <p style="font-size: 14px; color: var(--apple-orange);">有有特制</p>
+        <p>专业、纯粹的影像拆解工具 · 有有特制</p>
     </header>
 
-    <div style="display: flex; justify-content: center; margin-bottom: 24px; min-height: 40px;">
-        <div id="user-button"></div>
-    </div>
+    <!-- 注意：原来的头像容器 div 已删除 -->
+    ...
 
     <div class="glass-card">
         <div class="studio-layout">
