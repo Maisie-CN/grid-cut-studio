@@ -108,7 +108,6 @@
         .btn-download { background: var(--apple-blue); color: white; }
         .btn-resplit { background: var(--apple-orange); color: white; }
 
-        /* 重组拼图样式 */
         .puzzle-section { margin-top: 60px; padding: 30px; background: var(--apple-card); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,0.7); border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
         .puzzle-container { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
         .puzzle-preview { width: 300px; height: 300px; background: #1d1d1f; border-radius: 24px; display: grid; gap: 4px; padding: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
@@ -123,7 +122,6 @@
         .hidden { display: none !important; }
         svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
-
     <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuZ3JpZGN1dHN0dWRpby5jbiQ" src="https://clerk.gridcutstudio.cn/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
 </head>
 <body>
@@ -254,7 +252,7 @@
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
     function isAuthorized() { const user = window.Clerk?.user; return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress); }
-    function requireAuth() { if (!isAuthorized() && lastUserStatus === 'EXPIRED') { alert('体验已结束，请先登录或升级会员。'); return false; } return true; }
+    function requireAuth() { if (!isAuthorized() && lastUserStatus === 'EXPIRED') { alert('试用结束，请联系管理员或升级会员。'); return false; } return true; }
 
     function revokeAllCardURLs() { document.querySelectorAll('.result-card img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); }); }
     function clearResultGrid() { revokeAllCardURLs(); document.getElementById('resultGrid').innerHTML = ''; updateSelectionUI(); }
@@ -286,8 +284,7 @@
     function renderPreview() {
         if(!originalImage) return;
         const container = document.getElementById('previewContainer');
-        const currentW = secondaryMode ? selectedRegion.w : originalImage.width;
-        const currentH = secondaryMode ? selectedRegion.h : originalImage.height;
+        const currentW = secondaryMode ? selectedRegion.w : originalImage.width, currentH = secondaryMode ? selectedRegion.h : originalImage.height;
         container.style.height = Math.min(300, container.offsetWidth * (currentH / currentW)) + 'px';
         const rows = parseInt(document.getElementById('rowsInput').value), cols = parseInt(document.getElementById('colsInput').value);
         document.getElementById('previewInner').innerHTML = `<div class="thumb-grid" id="thumbGrid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);"></div>`;
@@ -364,81 +361,55 @@
     function confirmSecondary() { if (!requireAuth()) return; confirmSplit(selectedRegion.x, selectedRegion.y); if (currentSecondaryCard) { currentSecondaryCard.remove(); currentSecondaryCard = null; } cancelSecondary(); }
     function cancelSecondary() { secondaryMode = false; selectedRegion = null; currentSecondaryCard = null; document.getElementById('normalBtns').classList.remove('hidden'); document.getElementById('secondaryBtns').classList.add('hidden'); document.getElementById('modeTag').classList.add('hidden'); if(originalImage) { initLines(originalImage.width, originalImage.height); draw(); resetPreview(); } }
 
-    // ==========================================
-    // 拼图功能 (已增强：支持空图片生成)
-    // ==========================================
     function generatePuzzle() {
         if (!requireAuth()) return;
-        
-        let cards = document.querySelectorAll('.result-card.selected');
-        if (cards.length === 0) cards = document.querySelectorAll('.result-card');
-        
+        let cards = document.querySelectorAll('.result-card.selected'); if (cards.length === 0) cards = document.querySelectorAll('.result-card');
         const shape = document.getElementById('puzzleShapeSelect').value;
-        let rows = (shape === '3x3' || shape === '3x2') ? 3 : 2;
-        let cols = (shape === '3x3') ? 3 : 2;
-        const total = rows * cols, selected = Array.from(cards).slice(0, total);
-        
-        const div = document.getElementById('puzzlePreview');
+        let rows = (shape === '3x3' || shape === '3x2') ? 3 : 2, cols = (shape === '3x3') ? 3 : 2;
+        const total = rows * cols, selected = Array.from(cards).slice(0, total), div = document.getElementById('puzzlePreview');
         div.innerHTML = ''; div.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; div.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-        
         for (let i = 0; i < total; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'puzzle-cell'; cell.setAttribute('draggable', 'true'); cell.setAttribute('data-index', i);
+            const cell = document.createElement('div'); cell.className = 'puzzle-cell'; cell.setAttribute('draggable', 'true'); cell.setAttribute('data-index', i);
             cell.setAttribute('ondragstart', 'dragStart(event)'); cell.setAttribute('ondragover', 'event.preventDefault()'); cell.setAttribute('ondrop', 'dropOnCell(event)');
             if (i < selected.length) { const img = document.createElement('img'); img.src = selected[i].querySelector('img').src; cell.appendChild(img); } 
             else { cell.classList.add('empty'); }
-            
-            const btn = document.createElement('button'); btn.className = 'puzzle-upload-btn';
-            btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
-            btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); };
-            cell.appendChild(btn); div.appendChild(cell);
+            const btn = document.createElement('button'); btn.className = 'puzzle-upload-btn'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
+            btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(btn); div.appendChild(cell);
         }
         updatePuzzleCanvas();
     }
 
     function dragStart(ev) { draggedCell = ev.target.closest('.puzzle-cell'); ev.dataTransfer.setData('text/plain', draggedCell.dataset.index); }
     function dropOnCell(ev) {
-        ev.preventDefault(); const target = ev.target.closest('.puzzle-cell');
-        if (!target || !draggedCell || target === draggedCell) return;
+        ev.preventDefault(); const target = ev.target.closest('.puzzle-cell'); if (!target || !draggedCell || target === draggedCell) return;
         const temp = target.innerHTML; target.innerHTML = draggedCell.innerHTML; draggedCell.innerHTML = temp;
-        [target, draggedCell].forEach(cell => { const btn = cell.querySelector('.puzzle-upload-btn'); if (btn) btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); }; });
+        [target, draggedCell].forEach(c => { const b = c.querySelector('.puzzle-upload-btn'); if (b) b.onclick = (e) => { e.stopPropagation(); triggerFileUpload(c); }; });
         updatePuzzleCanvas(); draggedCell = null;
     }
-
     function triggerFileUpload(cell) {
         const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
         inp.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
+            const f = e.target.files[0];
+            if (f) {
                 const r = new FileReader();
                 r.onload = (ex) => {
                     cell.innerHTML = ''; const img = document.createElement('img'); img.src = ex.target.result; cell.appendChild(img);
                     const b = document.createElement('button'); b.className = 'puzzle-upload-btn'; b.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
                     b.onclick = (ex2) => { ex2.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(b); cell.classList.remove('empty'); updatePuzzleCanvas();
                 };
-                r.readAsDataURL(file);
+                r.readAsDataURL(f);
             }
         };
         inp.click();
     }
-
     function updatePuzzleCanvas() {
         const cells = document.querySelectorAll('.puzzle-cell'); if (cells.length === 0) return;
-        const ratio = document.getElementById('puzzleRatioSelect').value;
-        let w = (ratio === '9:16') ? 1440 : 2560, h = (ratio === '9:16') ? 2560 : 1440;
-        const shape = document.getElementById('puzzleShapeSelect').value;
-        let rows = (shape === '3x3' || shape === '3x2') ? 3 : 2, cols = (shape === '3x3') ? 3 : 2;
-        puzzleCanvas = document.createElement('canvas'); puzzleCanvas.width = w; puzzleCanvas.height = h;
-        const pCtx = puzzleCanvas.getContext('2d'); pCtx.fillStyle = '#000'; pCtx.fillRect(0, 0, w, h);
-        const cw = w / cols, ch = h / rows;
-        cells.forEach((cell, i) => { const col = i % cols, row = Math.floor(i / cols), img = cell.querySelector('img'); if (img) pCtx.drawImage(img, col * cw, row * ch, cw, ch); });
+        let w = (document.getElementById('puzzleRatioSelect').value === '9:16') ? 1440 : 2560, h = (document.getElementById('puzzleRatioSelect').value === '9:16') ? 2560 : 1440;
+        const shape = document.getElementById('puzzleShapeSelect').value; let rows = (shape==='3x3'||shape==='3x2')?3:2, cols = (shape==='3x3')?3:2;
+        puzzleCanvas = document.createElement('canvas'); puzzleCanvas.width = w; puzzleCanvas.height = h; const pCtx = puzzleCanvas.getContext('2d'); pCtx.fillStyle = '#000'; pCtx.fillRect(0, 0, w, h);
+        const cw = w / cols, ch = h / rows; cells.forEach((c, i) => { const img = c.querySelector('img'); if (img) pCtx.drawImage(img, (i%cols)*cw, Math.floor(i/cols)*ch, cw, ch); });
     }
-
-    function downloadPuzzle() {
-        if (!puzzleCanvas) return alert('请先生成拼图网格'); if (!requireAuth()) return;
-        updatePuzzleCanvas();
-        puzzleCanvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'puzzle.png'; a.click(); });
-    }
+    function downloadPuzzle() { if (!puzzleCanvas) return alert('请先生成拼图网格'); if (!requireAuth()) return; updatePuzzleCanvas(); puzzleCanvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'puzzle.png'; a.click(); }); }
 
     window.downloadUrl = (url) => { const a = document.createElement('a'); a.href = url; a.download = 'slice.png'; a.click(); };
     async function bundleZip(imgNodes, fileName) {
@@ -452,11 +423,31 @@
     async function downloadSelected() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-card.selected img'), 'Selected'); }
     async function downloadAll() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-grid img'), 'All'); }
 
+    // ==========================================
+    // 权限锁定逻辑 (核心增强：同时锁定拼图按钮)
+    // ==========================================
     function applyLock(type, minutesLeft = 0) {
         const area = document.getElementById('actionArea'); if (!area) return;
         const old = document.getElementById('login-tip'); if (old) old.remove();
-        const btns = [document.getElementById('normalBtns'), document.getElementById('secondaryBtns')];
-        btns.forEach(b => { if(b) { b.style.opacity = (type==='NOT_LOGGED_IN'||type==='EXPIRED') ? "0.2" : "1"; b.style.pointerEvents = (type==='NOT_LOGGED_IN'||type==='EXPIRED') ? "none" : "auto"; b.style.filter = (type==='NOT_LOGGED_IN'||type==='EXPIRED') ? "grayscale(1)" : "none"; } });
+        
+        // 核心修复：将拼图按钮加入锁定数组
+        const btns = [
+            document.getElementById('normalBtns'), 
+            document.getElementById('secondaryBtns'),
+            document.getElementById('generatePuzzleBtn'),
+            document.getElementById('downloadPuzzleBtn')
+        ];
+        
+        const isLocked = (type === 'NOT_LOGGED_IN' || type === 'EXPIRED');
+        
+        btns.forEach(b => { 
+            if(b) { 
+                b.style.opacity = isLocked ? "0.2" : "1"; 
+                b.style.pointerEvents = isLocked ? "none" : "auto"; 
+                b.style.filter = isLocked ? "grayscale(100%)" : "none"; 
+            } 
+        });
+
         if (type === 'NOT_LOGGED_IN') showTip("🔒 <b>功能已锁定</b><br><small>登录获取 1 小时试用</small>");
         else if (type === 'EXPIRED') showTip(`⏳ <b>试用结束</b><br><button onclick="payForVIP()" style="margin-top:10px; width:100%; padding:10px; background:#0071e3; color:white; border:none; border-radius:8px; cursor:pointer;">💎 解锁年度会员 (￥9.9)</button>`);
         else if (type === 'TRIAL') showTip(`✨ <b>体验中</b><br><small>剩余 ${minutesLeft} 分钟</small>`);
@@ -468,8 +459,7 @@
 
     async function handleUser(user) {
         if (!isUserButtonMounted) { Clerk.mountUserButton(document.getElementById('user-button'), { afterSignOutUrl: window.location.href }); isUserButtonMounted = true; }
-        const isWhite = isAuthorized();
-        const trialEnd = new Date(new Date(user.createdAt).getTime() + 3600000), now = new Date();
+        const isWhite = isAuthorized(), trialEnd = new Date(new Date(user.createdAt).getTime() + 3600000), now = new Date();
         const type = (user.publicMetadata?.isPro || isWhite) ? 'UNLOCK' : (now < trialEnd ? 'TRIAL' : 'EXPIRED');
         const timeLeft = (type === 'TRIAL') ? Math.ceil((trialEnd - now) / 60000) : 0;
         if (lastUserStatus !== type) { lastUserStatus = type; applyLock(type, timeLeft); }
