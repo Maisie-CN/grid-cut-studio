@@ -1005,18 +1005,26 @@
             const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; 
             const userButtonDiv = document.getElementById('user-button');
 
-            Clerk.mountSignIn(userButtonDiv, {
-                afterSignInUrl: appHomeUrl,
-            });
+            // 【新增】：加一个标记，防止重复渲染登录框导致界面被重置
+            let isSignInMounted = false;
 
             Clerk.addListener(({ user }) => {
                 if (user) {
+                    // 用户已登录
                     handleUser(user);
+                    isSignInMounted = false; // 登录成功后重置标记
                 } else {
-                    Clerk.mountSignIn(userButtonDiv, {
-                        afterSignInUrl: appHomeUrl,
-                    });
+                    // 用户未登录，锁定界面
                     applyLock('NOT_LOGGED_IN');
+                    
+                    // 【关键修复】：只有在登录框还没加载时，才去加载它
+                    if (!isSignInMounted) {
+                        Clerk.mountSignIn(userButtonDiv, {
+                            afterSignInUrl: appHomeUrl,
+                            // localization: window.ClerkLocalizations?.zhCN // 如果你用了上面提到的汉化包，可以开启这行
+                        });
+                        isSignInMounted = true; // 标记为已加载，下次状态更新就不会再重复刷新了
+                    }
                 }
             });
 
@@ -1032,7 +1040,9 @@
                 }
             }
 
-            if (Clerk.user) { handleUser(Clerk.user); }
+            if (Clerk.user) { 
+                handleUser(Clerk.user);
+            }
         }
     });
 </script>
