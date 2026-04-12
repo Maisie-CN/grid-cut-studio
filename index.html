@@ -964,44 +964,56 @@
     // ==========================================
     function applyLock(type, minutesLeft = 0) {
         const actionArea = document.getElementById('actionArea');
+        // 单独抓取下面的功能按钮组
+        const normalBtns = document.getElementById('normalBtns');
+        const secondaryBtns = document.getElementById('secondaryBtns');
+        
         if (!actionArea) return;
 
         // 彻底清除旧提示
         const oldTip = document.getElementById('login-tip');
         if (oldTip) oldTip.remove();
 
+        // 💡 新增一个辅助函数：只把功能按钮变灰，不影响我们弹出的支付按钮
+        const setButtonsLock = (isLocked) => {
+            const opacity = isLocked ? "0.2" : "1";
+            const pointerEvents = isLocked ? "none" : "auto";
+            const filter = isLocked ? "grayscale(100%)" : "none";
+            
+            if (normalBtns) { 
+                normalBtns.style.opacity = opacity; 
+                normalBtns.style.pointerEvents = pointerEvents; 
+                normalBtns.style.filter = filter; 
+            }
+            if (secondaryBtns) { 
+                secondaryBtns.style.opacity = opacity; 
+                secondaryBtns.style.pointerEvents = pointerEvents; 
+                secondaryBtns.style.filter = filter; 
+            }
+        };
+
         if (type === 'NOT_LOGGED_IN') {
-            actionArea.style.opacity = "0.2";
-            actionArea.style.pointerEvents = "none";
-            actionArea.style.filter = "grayscale(100%)";
+            setButtonsLock(true); // 锁定原按钮
             showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号以获取 1 小时免费体验</small>");
             
         } else if (type === 'EXPIRED') {
-            actionArea.style.opacity = "0.2";
-            actionArea.style.pointerEvents = "none";
-            actionArea.style.filter = "grayscale(100%)";
-            // 试用过期，直接在提示框里加上醒目的“支付 9.9 升级”按钮
+            setButtonsLock(true); // 锁定原按钮
+            // 此时支付按钮不再受限制，恢复鲜艳的橙色并且可以点击！
             showTip(`
                 ⏳ <b>试用已结束</b><br>
                 <small style="color:var(--apple-gray)">您的 1 小时免费体验已到期</small><br>
-                <button onclick="payForVIP()" class="btn btn-primary" style="margin-top:15px; width:100%; background:var(--apple-orange); box-shadow: 0 4px 15px rgba(255,149,0,0.3);">
+                <button onclick="payForVIP()" class="btn btn-primary" style="margin-top:15px; width:100%; background:var(--apple-orange); color:white; border:none; box-shadow: 0 4px 15px rgba(255,149,0,0.3); cursor:pointer;">
                     💎 支付 9.9 元解锁年度会员
                 </button>
             `);
             
         } else if (type === 'TRIAL') {
-            actionArea.style.opacity = "1";
-            actionArea.style.pointerEvents = "auto";
-            actionArea.style.filter = "none";
-            // 试用中，给一个温柔的倒计时提示，不阻碍用户操作
+            setButtonsLock(false); // 解锁原按钮
             showTip(`✨ <b>免费体验中</b><br><small>您的试用时间还剩 <span style="color:var(--apple-orange); font-weight:bold;">${minutesLeft}</span> 分钟</small>`);
             
         } else {
             // UNLOCK (VIP状态)
-            actionArea.style.opacity = "1";
-            actionArea.style.pointerEvents = "auto";
-            actionArea.style.filter = "none";
-            // VIP尊贵标识，给用户花钱后的情绪价值
+            setButtonsLock(false); // 解锁原按钮
             showTip(`👑 <b style="color:var(--apple-blue)">尊贵的年度会员</b><br><small>感谢您的支持，请尽情创作</small>`);
         }
     }
@@ -1064,7 +1076,7 @@
 
         // 2. 获取用户注册时间，并计算 1 小时后的到期时间
         const createdAt = new Date(user.createdAt);
-        const trialDuration = 1 * 60 * 1000; // 1小时的毫秒数 (60分钟 * 60秒 * 1000)
+        const trialDuration = 60 * 60 * 1000; // 1小时的毫秒数 (60分钟 * 60秒 * 1000)
         const trialEndTime = new Date(createdAt.getTime() + trialDuration);
         
         // 3. 获取当前时间
