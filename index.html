@@ -15,18 +15,11 @@
             --apple-gray: #86868b;
         }
 
-        /* 💡 在这里插入动画暗号 */
-    @keyframes slideIn {
-        0% {
-            opacity: 0;
-            transform: translateY(-20px) scale(0.9);
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
-        
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -156,7 +149,6 @@
         .btn-download { background: var(--apple-blue); color: white; }
         .btn-resplit { background: var(--apple-orange); color: white; }
 
-        /* 新增九宫格拼图样式 */
         .puzzle-section {
             margin-top: 60px;
             padding: 30px;
@@ -190,7 +182,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative; /* 用于绝对定位上传按钮 */
+            position: relative;
         }
         .puzzle-cell img {
             width: 100%;
@@ -234,23 +226,21 @@
         svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 
-    <!-- 生产环境 Clerk 脚本 -->
+    <!-- Clerk 生产环境脚本 -->
     <script async
             crossorigin="anonymous"
             data-clerk-publishable-key="pk_live_Y2xlcmsuZ3JpZGN1dHN0dWRpby5jbiQ"
-            src="https://clerk.gridcutstudio.cn/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+            src="https://clerk.gridcustudio.cn/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
             type="text/javascript"></script>
 </head>
 <body>
 
 <div class="container">
-    <!-- 标题区（居中，副标题已添加“有有特制”） -->
     <header>
         <h1>Grid Cut Studio</h1>
         <p>专业、纯粹的影像拆解工具 · 有有特制</p>
     </header>
 
-    <!-- 头像容器（原位置：标题下方居中） -->
     <div style="display: flex; justify-content: center; margin-bottom: 24px; min-height: 40px;">
         <div id="user-button"></div>
     </div>
@@ -330,17 +320,13 @@
     
     <div class="result-grid" id="resultGrid"></div>
 
-    <!-- 重组拼图模块（支持多种形状） -->
     <div class="puzzle-section">
         <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组拼图</h2>
         <div class="puzzle-container">
-            <div class="puzzle-preview" id="puzzlePreview">
-                <!-- 格子由JS动态填充 -->
-            </div>
+            <div class="puzzle-preview" id="puzzlePreview"></div>
             <div class="puzzle-actions">
                 <p>使用当前选中的切片（最多9张）重组为拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前N张。<br><strong>拖动格子可交换位置，点击格子右上角按钮可上传图片替换。</strong></p>
                 
-                <!-- 拼图形状选择 -->
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">拼图形状：</label>
                     <select id="puzzleShapeSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -350,7 +336,6 @@
                     </select>
                 </div>
                 
-                <!-- 比例选择 -->
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">下载比例：</label>
                     <select id="puzzleRatioSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -359,8 +344,9 @@
                     </select>
                 </div>
                 
-                <div style="display: flex; gap: 12px;">
-                    <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图</button>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">从切片生成拼图</button>
+                    <button id="uploadImagesBtn" class="btn btn-secondary" onclick="uploadImagesForPuzzle()">📷 上传图片生成拼图</button>
                     <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图</button>
                 </div>
             </div>
@@ -370,7 +356,7 @@
 
 <script>
     // ==========================================
-    // 【会员管理中心】在此修改允许使用的邮箱
+    // 会员白名单（保留备用）
     // ==========================================
     const MEMBER_WHITELIST = [
         "zhuangshanmeizi@gmail.com",
@@ -380,23 +366,22 @@
         "dalaivikas738@gmail.com",
         "buntsriggsby@gmail.com",
     ];
-    let isUserButtonMounted = false;
 
-    // ==========================================
-    // 核心状态与工具函数
-    // ==========================================
+    // 全局变量
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
-    let currentSecondaryCard = null; // 存储二次切割对应的卡片元素，用于之后移除
-    // 拼图拖拽相关
-    let draggedCell = null; // 当前正在拖拽的格子
-    let puzzleCanvas = null; // 存储当前拼图画布，用于下载
+    let currentSecondaryCard = null;
+    let draggedCell = null;
+    let puzzleCanvas = null;
+    let isUserButtonMounted = false;      // 控制用户按钮只挂载一次
+    let lastUserStatus = null;            // 避免重复 applyLock
+    let currentLockType = null;           // 避免重复渲染提示框
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
-    // 权限检查函数
+    // ========== 权限与 UI 相关 ==========
     function isAuthorized() {
         const user = window.Clerk?.user;
         return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress);
@@ -410,23 +395,18 @@
         return true;
     }
 
-    // 释放所有卡片中的对象URL（优化内存）
     function revokeAllCardURLs() {
         document.querySelectorAll('.result-card img').forEach(img => {
-            if (img.src.startsWith('blob:')) {
-                URL.revokeObjectURL(img.src);
-            }
+            if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
         });
     }
 
-    // 清除结果网格（同时释放URL）
     function clearResultGrid() {
         revokeAllCardURLs();
         document.getElementById('resultGrid').innerHTML = '';
         updateSelectionUI();
     }
 
-    // 更新选中按钮状态
     function updateSelectionUI() {
         const selected = document.querySelectorAll('.result-card.selected');
         const btn = document.getElementById('selectedDownloadBtn');
@@ -440,7 +420,6 @@
         updateSelectionUI(); 
     }
 
-    // 初始化网格线
     function initLines(w, h) {
         const r = parseInt(document.getElementById('rowsInput').value);
         const c = parseInt(document.getElementById('colsInput').value);
@@ -450,7 +429,6 @@
         for(let i=1; i<r; i++) linesY.push((h/r)*i);
     }
 
-    // 绘制canvas（带网格线）
     function draw() {
         if(!originalImage) return;
         if(secondaryMode) {
@@ -470,7 +448,6 @@
         linesY.forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); });
     }
 
-    // 更新行列
     function updateGrid(type, delta) {
         const input = document.getElementById(type + 'Input');
         let val = parseInt(input.value) + delta;
@@ -483,7 +460,6 @@
         }
     }
 
-    // 重置预览占位
     function resetPreview() {
         const container = document.getElementById('previewContainer');
         container.style.height = '120px';
@@ -495,7 +471,6 @@
         `;
     }
 
-    // 生成预览缩略图
     function renderPreview() {
         if(!originalImage) return;
         const container = document.getElementById('previewContainer');
@@ -527,7 +502,6 @@
         }
     }
 
-    // 文件处理
     function handleFile(file) {
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -536,18 +510,17 @@
                 originalImage = img;
                 document.getElementById('uploadUI').classList.add('hidden');
                 canvas.classList.remove('hidden');
-                cancelSecondary(); // 退出二次模式
+                cancelSecondary();
                 initLines(img.width, img.height);
                 draw();
                 resetPreview();
-                clearResultGrid(); // 清空旧切片
+                clearResultGrid();
             };
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
     }
 
-    // 拖拽事件
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
     dropZone.addEventListener('drop', (e) => {
@@ -558,7 +531,6 @@
     dropZone.onclick = (e) => { if(e.target === dropZone || e.target.closest('.upload-ui')) fileIn.click(); };
     fileIn.onchange = (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); };
 
-    // 获取鼠标在canvas上的坐标（考虑缩放）
     function getMouse(e) { 
         const rect = canvas.getBoundingClientRect(); 
         if (rect.width === 0) return { x: 0, y: 0 };
@@ -568,19 +540,16 @@
         }; 
     }
 
-    // 鼠标按下：检测是否点击到线
     canvas.onmousedown = (e) => {
         const p = getMouse(e), t = canvas.width / 40;
         linesX.forEach((x, i) => { if(Math.abs(p.x - x) < t) { isDragging = true; dragAxis = 'x'; dragIndex = i; } });
         if(!isDragging) linesY.forEach((y, i) => { if(Math.abs(p.y - y) < t) { isDragging = true; dragAxis = 'y'; dragIndex = i; } });
     };
 
-    // 鼠标移动：拖动线，并限制不越过相邻线
     window.onmousemove = (e) => {
         if(isDragging && originalImage) {
             const p = getMouse(e);
             if(dragAxis === 'x') {
-                // 限制左右边界
                 let minX = dragIndex > 0 ? linesX[dragIndex-1] + 5 : 5;
                 let maxX = dragIndex < linesX.length-1 ? linesX[dragIndex+1] - 5 : canvas.width - 5;
                 linesX[dragIndex] = Math.max(minX, Math.min(maxX, p.x));
@@ -595,16 +564,12 @@
     };
     window.onmouseup = () => { isDragging = false; };
 
-    // 确认拆分（核心功能）
     function confirmSplit(bx=0, by=0) {
         if(!originalImage) return alert('请先上传图片');
-        if (!requireAuth()) return; // 权限检查
+        if (!requireAuth()) return;
 
         const grid = document.getElementById('resultGrid');
-        if(!secondaryMode) {
-            // 普通拆分：清空之前结果
-            clearResultGrid();
-        }
+        if(!secondaryMode) clearResultGrid();
         const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width];
         const sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
         const rows = sortedY.length - 1;
@@ -617,13 +582,11 @@
                 const off = document.createElement('canvas'); off.width = w; off.height = h;
                 off.getContext('2d').drawImage(originalImage, curX, curY, w, h, 0, 0, w, h);
                 
-                // 使用toBlob生成对象URL（优化内存）
                 off.toBlob((blob) => {
                     const url = URL.createObjectURL(blob);
                     const card = document.createElement('div');
                     card.className = 'result-card';
                     card.onclick = (e) => { if(!e.target.closest('.action-btn')) toggleSelect(card); };
-                    // 存储坐标和尺寸信息，供二次切割使用
                     card.dataset.x = curX;
                     card.dataset.y = curY;
                     card.dataset.w = w;
@@ -636,7 +599,6 @@
         updateSelectionUI();
     }
 
-    // 下载单个图片
     window.downloadUrl = (url) => { 
         const a = document.createElement('a'); 
         a.href = url; 
@@ -644,7 +606,6 @@
         a.click(); 
     };
 
-    // 下载选中
     async function downloadSelected() { 
         if (!requireAuth()) return;
         const imgs = document.querySelectorAll('.result-card.selected img'); 
@@ -652,7 +613,6 @@
         else alert('请先选中要下载的切片');
     }
 
-    // 下载全部
     async function downloadAll() { 
         if (!requireAuth()) return;
         const imgs = document.querySelectorAll('.result-grid img'); 
@@ -660,15 +620,12 @@
         else alert('请先拆分图片'); 
     }
 
-    // 打包ZIP
     async function bundleZip(imgNodes, fileName) {
         const zip = new JSZip();
-        // 将对象URL转换为base64（JSZip需要）
         for (let i = 0; i < imgNodes.length; i++) {
             const img = imgNodes[i];
             let dataUrl;
             if (img.src.startsWith('blob:')) {
-                // 需要将blob转为dataURL
                 const blob = await fetch(img.src).then(r => r.blob());
                 dataUrl = await new Promise(resolve => {
                     const reader = new FileReader();
@@ -689,7 +646,6 @@
         URL.revokeObjectURL(a.href);
     }
 
-    // 二次切割入口
     function startSecondary(btn) {
         const card = btn.closest('.result-card');
         if (!card) return;
@@ -709,23 +665,18 @@
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
-    // 完成二次切割
     function confirmSecondary() {
         if (!requireAuth()) return;
-        // 调用拆分，传入相对坐标
         confirmSplit(selectedRegion.x, selectedRegion.y);
-        // 移除原卡片（二次切割后原卡片应该被新切片替代）
         if (currentSecondaryCard) {
-            // 如果原卡片的图片是blob，记得释放
             const img = currentSecondaryCard.querySelector('img');
             if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
             currentSecondaryCard.remove();
             currentSecondaryCard = null;
         }
-        cancelSecondary(); // 退出二次模式
+        cancelSecondary();
     }
 
-    // 取消二次切割
     function cancelSecondary() {
         secondaryMode = false;
         selectedRegion = null;
@@ -740,50 +691,21 @@
         }
     }
 
-    // ==========================================
-    // 重组拼图功能（支持多种形状和拖拽上传）
-    // ==========================================
-
-    // 生成拼图
-    function generatePuzzle() {
-    if (!originalImage) {
-        alert('请先上传图片并拆分切片');
-        return;
-    }
-    if (!requireAuth()) return;
-
-    let cards = document.querySelectorAll('.result-card.selected');
-    if (cards.length === 0) {
-        cards = document.querySelectorAll('.result-card');
-    }
-    if (cards.length === 0) {
-        alert('没有可用的切片，请先拆分图片');
-        return;
-    }
-
-    const imageUrls = Array.from(cards).map(card => card.querySelector('img').src);
-    renderPuzzleWithImages(imageUrls);
-}
-
-        // 获取用户选择的拼图形状
+    // ========== 拼图相关核心函数 ==========
+    function renderPuzzleWithImages(images) {
         const shapeSelect = document.getElementById('puzzleShapeSelect');
-        const shape = shapeSelect.value; // "3x3", "3x2", "2x2"
+        const shape = shapeSelect.value;
         let rows, cols;
         if (shape === '3x3') { rows = 3; cols = 3; }
         else if (shape === '3x2') { rows = 3; cols = 2; }
         else if (shape === '2x2') { rows = 2; cols = 2; }
         const totalCells = rows * cols;
 
-        // 取前 totalCells 张，不足留空
-        const selectedCards = Array.from(cards).slice(0, totalCells);
         const puzzleDiv = document.getElementById('puzzlePreview');
-        puzzleDiv.innerHTML = ''; // 清空
-
-        // 设置预览网格的行列数
+        puzzleDiv.innerHTML = '';
         puzzleDiv.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
         puzzleDiv.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-        // 创建格子
         for (let i = 0; i < totalCells; i++) {
             const cell = document.createElement('div');
             cell.className = 'puzzle-cell';
@@ -793,17 +715,14 @@
             cell.setAttribute('ondragover', 'event.preventDefault()');
             cell.setAttribute('ondrop', 'dropOnCell(event)');
 
-            // 添加图片内容
-            if (i < selectedCards.length) {
-                const img = selectedCards[i].querySelector('img');
-                const newImg = document.createElement('img');
-                newImg.src = img.src; // 直接使用原图片src
-                cell.appendChild(newImg);
+            if (i < images.length) {
+                const img = document.createElement('img');
+                img.src = images[i];
+                cell.appendChild(img);
             } else {
-                cell.classList.add('empty'); // 黑色背景
+                cell.classList.add('empty');
             }
 
-            // 添加上传按钮（加号图标）
             const uploadBtn = document.createElement('button');
             uploadBtn.className = 'puzzle-upload-btn';
             uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
@@ -812,43 +731,69 @@
                 triggerFileUpload(cell);
             };
             cell.appendChild(uploadBtn);
-
             puzzleDiv.appendChild(cell);
         }
-
-        // 更新拼图画布（用于下载）
         updatePuzzleCanvas();
     }
 
-    // 拖拽开始
+    function generatePuzzle() {
+        if (!originalImage) {
+            alert('请先上传图片并拆分切片');
+            return;
+        }
+        if (!requireAuth()) return;
+
+        let cards = document.querySelectorAll('.result-card.selected');
+        if (cards.length === 0) cards = document.querySelectorAll('.result-card');
+        if (cards.length === 0) {
+            alert('没有可用的切片，请先拆分图片');
+            return;
+        }
+
+        const imageUrls = Array.from(cards).map(card => card.querySelector('img').src);
+        renderPuzzleWithImages(imageUrls);
+    }
+
+    function uploadImagesForPuzzle() {
+        if (!requireAuth()) return;
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        input.onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            const images = await Promise.all(files.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => resolve(ev.target.result);
+                    reader.readAsDataURL(file);
+                });
+            }));
+            renderPuzzleWithImages(images);
+        };
+        input.click();
+    }
+
     function dragStart(event) {
         draggedCell = event.target.closest('.puzzle-cell');
         event.dataTransfer.setData('text/plain', draggedCell.dataset.index);
         event.dataTransfer.effectAllowed = 'move';
     }
 
-    // 拖拽放置（在格子上释放）
     function dropOnCell(event) {
         event.preventDefault();
         const targetCell = event.target.closest('.puzzle-cell');
         if (!targetCell || !draggedCell || targetCell === draggedCell) return;
-
-        // 交换两个格子的内部HTML（图片 + 上传按钮）
         const tempHTML = targetCell.innerHTML;
         targetCell.innerHTML = draggedCell.innerHTML;
         draggedCell.innerHTML = tempHTML;
-
-        // 重新绑定上传按钮的事件（因为innerHTML被替换，原绑定丢失）
         rebindUploadButtons(targetCell);
         rebindUploadButtons(draggedCell);
-
-        // 更新拼图画布
         updatePuzzleCanvas();
-
         draggedCell = null;
     }
 
-    // 重新绑定格子内的上传按钮事件
     function rebindUploadButtons(cell) {
         const btn = cell.querySelector('.puzzle-upload-btn');
         if (btn) {
@@ -859,27 +804,21 @@
         }
     }
 
-    // 触发文件上传替换格子内容
     function triggerFileUpload(cell) {
-        // 创建一个临时的文件输入
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/*';
         fileInput.style.display = 'none';
         document.body.appendChild(fileInput);
-
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    // 清空格子内容
                     cell.innerHTML = '';
-                    // 创建新图片
                     const img = document.createElement('img');
                     img.src = ev.target.result;
                     cell.appendChild(img);
-                    // 重新添加上传按钮
                     const uploadBtn = document.createElement('button');
                     uploadBtn.className = 'puzzle-upload-btn';
                     uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
@@ -888,78 +827,49 @@
                         triggerFileUpload(cell);
                     };
                     cell.appendChild(uploadBtn);
-                    cell.classList.remove('empty'); // 移除黑色背景样式
-
-                    // 更新拼图画布
+                    cell.classList.remove('empty');
                     updatePuzzleCanvas();
                 };
                 reader.readAsDataURL(file);
             }
-            // 用完移除临时元素
             document.body.removeChild(fileInput);
         };
         fileInput.click();
     }
 
-    // 更新拼图画布（根据所选比例和形状）
     function updatePuzzleCanvas() {
         const cells = document.querySelectorAll('.puzzle-cell');
         if (cells.length === 0) return;
-
-        // 获取用户选择的比例
         const ratioSelect = document.getElementById('puzzleRatioSelect');
         let width, height;
-        if (ratioSelect && ratioSelect.value === '9:16') {
-            width = 1440;
-            height = 2560;
-        } else {
-            // 默认 16:9
-            width = 2560;
-            height = 1440;
-        }
-
-        // 获取当前拼图形状（行列数）
+        if (ratioSelect && ratioSelect.value === '9:16') { width = 1440; height = 2560; }
+        else { width = 2560; height = 1440; }
         const shapeSelect = document.getElementById('puzzleShapeSelect');
         const shape = shapeSelect.value;
         let rows, cols;
         if (shape === '3x3') { rows = 3; cols = 3; }
         else if (shape === '3x2') { rows = 3; cols = 2; }
         else if (shape === '2x2') { rows = 2; cols = 2; }
-
-        // 创建画布
         puzzleCanvas = document.createElement('canvas');
         puzzleCanvas.width = width;
         puzzleCanvas.height = height;
         const ctx = puzzleCanvas.getContext('2d');
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, width, height);
-
         const cellWidth = width / cols;
         const cellHeight = height / rows;
-
         cells.forEach((cell, index) => {
             const col = index % cols;
             const row = Math.floor(index / cols);
             const img = cell.querySelector('img');
-            if (img) {
-                // 将图片拉伸绘制到整个格子
-                ctx.drawImage(img, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            } else {
-                // 空单元格保持黑色
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            }
+            if (img) ctx.drawImage(img, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
+            else { ctx.fillStyle = '#000000'; ctx.fillRect(col * cellWidth, row * cellHeight, cellWidth, cellHeight); }
         });
     }
 
-    // 下载拼图
     function downloadPuzzle() {
-        if (!puzzleCanvas) {
-            alert('请先生成拼图');
-            return;
-        }
+        if (!puzzleCanvas) { alert('请先生成拼图'); return; }
         if (!requireAuth()) return;
-        // 先更新画布，保证内容最新
         updatePuzzleCanvas();
         puzzleCanvas.toBlob((blob) => {
             const url = URL.createObjectURL(blob);
@@ -971,99 +881,18 @@
         });
     }
 
-    // 新增：从本地图片直接生成拼图
-function uploadImagesForPuzzle() {
-    if (!requireAuth()) return;
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
-    input.onchange = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-
-        const images = await Promise.all(files.map(file => {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => resolve(ev.target.result);
-                reader.readAsDataURL(file);
-            });
-        }));
-
-        renderPuzzleWithImages(images);
-    };
-    input.click();
-}
-
-// 通用拼图渲染函数
-function renderPuzzleWithImages(images) {
-    const shapeSelect = document.getElementById('puzzleShapeSelect');
-    const shape = shapeSelect.value;
-    let rows, cols;
-    if (shape === '3x3') { rows = 3; cols = 3; }
-    else if (shape === '3x2') { rows = 3; cols = 2; }
-    else if (shape === '2x2') { rows = 2; cols = 2; }
-    const totalCells = rows * cols;
-
-    const puzzleDiv = document.getElementById('puzzlePreview');
-    puzzleDiv.innerHTML = '';
-    puzzleDiv.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    puzzleDiv.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-
-    for (let i = 0; i < totalCells; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'puzzle-cell';
-        cell.setAttribute('draggable', 'true');
-        cell.setAttribute('data-index', i);
-        cell.setAttribute('ondragstart', 'dragStart(event)');
-        cell.setAttribute('ondragover', 'event.preventDefault()');
-        cell.setAttribute('ondrop', 'dropOnCell(event)');
-
-        if (i < images.length) {
-            const img = document.createElement('img');
-            img.src = images[i];
-            cell.appendChild(img);
-        } else {
-            cell.classList.add('empty');
-        }
-
-        const uploadBtn = document.createElement('button');
-        uploadBtn.className = 'puzzle-upload-btn';
-        uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
-        uploadBtn.onclick = (e) => {
-            e.stopPropagation();
-            triggerFileUpload(cell);
-        };
-        cell.appendChild(uploadBtn);
-        puzzleDiv.appendChild(cell);
-    }
-
-    updatePuzzleCanvas();
-}
-    
-    // 防止页面默认拖拽行为
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
 
-    
-    // ==========================================
-    // 【权限锁定逻辑】（优化后，不再跳动）
-    // ==========================================
-    let currentLockType = null; // 记录当前的锁定状态，避免重复渲染
-
+    // ========== 权限 UI 优化 ==========
     function applyLock(type, minutesLeft = 0) {
         const actionArea = document.getElementById('actionArea');
         const normalBtns = document.getElementById('normalBtns');
         const secondaryBtns = document.getElementById('secondaryBtns');
-        
         if (!actionArea) return;
-
-        // 如果状态没变化，直接返回，不重复刷新 UI
         if (currentLockType === type) return;
         currentLockType = type;
 
-        // 清除旧提示框（避免重复创建）
         const oldTip = document.getElementById('login-tip');
         if (oldTip) oldTip.remove();
 
@@ -1071,63 +900,37 @@ function renderPuzzleWithImages(images) {
             const opacity = isLocked ? "0.2" : "1";
             const pointerEvents = isLocked ? "none" : "auto";
             const filter = isLocked ? "grayscale(100%)" : "none";
-            if (normalBtns) { 
-                normalBtns.style.opacity = opacity; 
-                normalBtns.style.pointerEvents = pointerEvents; 
-                normalBtns.style.filter = filter; 
-            }
-            if (secondaryBtns) { 
-                secondaryBtns.style.opacity = opacity; 
-                secondaryBtns.style.pointerEvents = pointerEvents; 
-                secondaryBtns.style.filter = filter; 
-            }
+            if (normalBtns) { normalBtns.style.opacity = opacity; normalBtns.style.pointerEvents = pointerEvents; normalBtns.style.filter = filter; }
+            if (secondaryBtns) { secondaryBtns.style.opacity = opacity; secondaryBtns.style.pointerEvents = pointerEvents; secondaryBtns.style.filter = filter; }
         };
 
         if (type === 'NOT_LOGGED_IN') {
             setButtonsLock(true);
             showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号以获取 1 小时免费体验</small>");
-            
         } else if (type === 'EXPIRED') {
             setButtonsLock(true);
             showTip(`
                 ⏳ <b>试用已结束</b><br>
                 <small style="color:#86868b">您的 1 小时免费体验已到期</small><br>
-                <button onclick="payForVIP()" style="
-                    margin-top: 15px;
-                    width: 100%;
-                    height: 44px;
-                    background: #0071e3;
-                    color: white;
-                    border: none;
-                    border-radius: 10px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(0,113,227,0.3);
-                ">
+                <button onclick="payForVIP()" style="margin-top: 15px; width: 100%; height: 44px; background: #0071e3; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,113,227,0.3);">
                     💎 解锁年度会员 (￥9.9)
                 </button>
             `);
-            
         } else if (type === 'TRIAL') {
             setButtonsLock(false);
             showTip(`✨ <b>免费体验中</b><br><small>您的试用时间还剩 <span style="color:var(--apple-orange); font-weight:bold;">${minutesLeft}</span> 分钟</small>`);
-            
         } else {
-            // UNLOCK (VIP 状态)
             setButtonsLock(false);
             showTip(`👑 <b style="color:var(--apple-blue)">尊贵的年度会员</b><br><small>感谢您的支持，请尽情创作</small>`);
         }
     }
 
     function showTip(msg) {
-        // 防止重复创建（再次检查，保险）
         if (document.getElementById('login-tip')) return;
-
         const actionArea = document.getElementById('actionArea');
         const tip = document.createElement('p');
         tip.id = "login-tip";
         tip.innerHTML = msg;
-        
         tip.style.cssText = `
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(12px);
@@ -1143,11 +946,9 @@ function renderPuzzleWithImages(images) {
             line-height: 1.6;
             animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
         `;
-
         actionArea.prepend(tip);
     }
 
-    // 点击支付按钮时触发
     function payForVIP() {
         const user = window.Clerk?.user;
         if (!user) return alert("请先登录");
@@ -1155,51 +956,12 @@ function renderPuzzleWithImages(images) {
         window.location.href = LAF_PAY_URL + "?userid=" + user.id;
     }
 
-    // 优化 handleUser，避免重复调用 applyLock
-    let lastUserStatus = null;
-
-    async function handleUser(user) {
-    await user.reload();
-
-    // 只挂载一次用户按钮，避免菜单闪烁
-    if (!isUserButtonMounted) {
-        Clerk.mountUserButton(document.getElementById('user-button'), {
-            afterSignOutUrl: window.location.href.split('?')[0].split('#')[0],
-        });
-        isUserButtonMounted = true;
-    }
-
-    const isPro = user.publicMetadata?.isPro === true;
-    const createdAt = new Date(user.createdAt);
-    const trialEndTime = new Date(createdAt.getTime() + 60 * 60 * 1000);
-    const now = new Date();
-
-    let newType = 'UNLOCK';
-    if (isPro) {
-        newType = 'UNLOCK';
-    } else if (now < trialEndTime) {
-        const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
-        applyLock('TRIAL', minutesLeft);
-        return;
-    } else {
-        newType = 'EXPIRED';
-    }
-
-    if (lastUserStatus !== newType) {
-        lastUserStatus = newType;
-        applyLock(newType);
-    }
-}
-    }
-
-    // Clerk初始化
+    // ========== Clerk 初始化 ==========
     window.addEventListener('load', async function () {
         if (window.Clerk) {
             await Clerk.load();
-
-            const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; 
+            const appHomeUrl = window.location.href.split('?')[0].split('#')[0];
             const userButtonDiv = document.getElementById('user-button');
-
             let isSignInMounted = false;
 
             Clerk.addListener(({ user }) => {
@@ -1209,17 +971,45 @@ function renderPuzzleWithImages(images) {
                 } else {
                     applyLock('NOT_LOGGED_IN');
                     if (!isSignInMounted) {
-                        Clerk.mountSignIn(userButtonDiv, {
-                            afterSignInUrl: appHomeUrl,
-                        });
+                        Clerk.mountSignIn(userButtonDiv, { afterSignInUrl: appHomeUrl });
                         isSignInMounted = true;
                     }
                 }
             });
 
-            if (Clerk.user) { 
-                handleUser(Clerk.user);
+            async function handleUser(user) {
+                await user.reload();
+                if (!isUserButtonMounted) {
+                    Clerk.mountUserButton(document.getElementById('user-button'), {
+                        afterSignOutUrl: appHomeUrl,
+                    });
+                    isUserButtonMounted = true;
+                }
+                const isPro = user.publicMetadata?.isPro === true;
+                const createdAt = new Date(user.createdAt);
+                const trialEndTime = new Date(createdAt.getTime() + 60 * 60 * 1000);
+                const now = new Date();
+
+                if (isPro) {
+                    if (lastUserStatus !== 'UNLOCK') {
+                        lastUserStatus = 'UNLOCK';
+                        applyLock('UNLOCK');
+                    }
+                } else if (now < trialEndTime) {
+                    const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
+                    if (lastUserStatus !== 'TRIAL') {
+                        lastUserStatus = 'TRIAL';
+                        applyLock('TRIAL', minutesLeft);
+                    }
+                } else {
+                    if (lastUserStatus !== 'EXPIRED') {
+                        lastUserStatus = 'EXPIRED';
+                        applyLock('EXPIRED');
+                    }
+                }
             }
+
+            if (Clerk.user) handleUser(Clerk.user);
         }
     });
 </script>
