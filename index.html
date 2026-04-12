@@ -1042,27 +1042,34 @@
     }
 
     function showTip(msg) {
-        const actionArea = document.getElementById('actionArea');
-        const tip = document.createElement('p');
-        tip.id = "login-tip";
-        tip.innerHTML = msg;
-        tip.style.cssText = `
-    background: rgba(255, 255, 255, 0.7); /* 磨砂玻璃色 */
-    backdrop-filter: blur(12px);          /* 毛玻璃模糊 */
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
-    padding: 20px;
-    text-align: center;
-    margin-bottom: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); /* 柔和阴影 */
-    color: #1d1d1f;
-    font-size: 14px;
-    line-height: 1.6;
-    animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* 弹跳进入动画 */
-`;
-        actionArea.prepend(tip);
-    }
+    // 1. 哨兵检查：如果已经有提示框了，直接退出，不重复创建
+    if (document.getElementById('login-tip')) return;
+
+    const actionArea = document.getElementById('actionArea');
+    const tip = document.createElement('p');
+    tip.id = "login-tip";
+    tip.innerHTML = msg;
+    
+    // 2. 这里的样式保持你之前的毛玻璃效果
+    tip.style.cssText = `
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        color: #1d1d1f;
+        font-size: 14px;
+        line-height: 1.6;
+        /* 确保动画只执行一次，不要循环 */
+        animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+    `;
+
+    actionArea.prepend(tip);
+}
 
     // 点击支付按钮时触发
     function payForVIP() {
