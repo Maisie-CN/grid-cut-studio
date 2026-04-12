@@ -1032,10 +1032,10 @@
         const user = window.Clerk?.user;
         if (!user) return alert("请先登录");
 
-        // ⚠️ 替换为你刚才第一步里发布的 Laf 【pay】 函数的链接
-        const LAF_PAY_URL = "https://你的应用前缀.sealos.run/pay"; 
+        // ⚠️ 把下面引号里的内容，换成你真正在 Sealaf 里复制出来的链接！
+        // 绝对不能有中文字符哦！
+        const LAF_PAY_URL = "https://m91iv9q6e6.sealosbja.site/pay"; 
         
-        // 带着用户的 ID 跳转到我们的 Laf 收银台
         window.location.href = LAF_PAY_URL + "?userid=" + user.id;
     }
 
