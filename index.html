@@ -226,7 +226,7 @@
         svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 
-    <!-- Clerk 生产环境脚本 -->
+    <!-- 生产环境 Clerk 脚本 -->
     <script async
             crossorigin="anonymous"
             data-clerk-publishable-key="pk_live_Y2xlcmsuZ3JpZGN1dHN0dWRpby5jbiQ"
@@ -356,7 +356,7 @@
 
 <script>
     // ==========================================
-    // 会员白名单（保留备用）
+    // 会员白名单（保留原样）
     // ==========================================
     const MEMBER_WHITELIST = [
         "zhuangshanmeizi@gmail.com",
@@ -367,21 +367,20 @@
         "buntsriggsby@gmail.com",
     ];
 
-    // 全局变量
+    // ==========================================
+    // 核心状态与工具函数（保持不变）
+    // ==========================================
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
     let currentSecondaryCard = null;
     let draggedCell = null;
     let puzzleCanvas = null;
-    let isUserButtonMounted = false;      // 控制用户按钮只挂载一次
-    let lastUserStatus = null;            // 避免重复 applyLock
-    let currentLockType = null;           // 避免重复渲染提示框
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
-    // ========== 权限与 UI 相关 ==========
+    // 权限检查函数
     function isAuthorized() {
         const user = window.Clerk?.user;
         return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress);
@@ -691,7 +690,9 @@
         }
     }
 
-    // ========== 拼图相关核心函数 ==========
+    // ==========================================
+    // 新增：通用拼图渲染函数 + 上传图片功能
+    // ==========================================
     function renderPuzzleWithImages(images) {
         const shapeSelect = document.getElementById('puzzleShapeSelect');
         const shape = shapeSelect.value;
@@ -736,6 +737,7 @@
         updatePuzzleCanvas();
     }
 
+    // 修改原有的 generatePuzzle 函数，复用 renderPuzzleWithImages
     function generatePuzzle() {
         if (!originalImage) {
             alert('请先上传图片并拆分切片');
@@ -754,6 +756,7 @@
         renderPuzzleWithImages(imageUrls);
     }
 
+    // 新增：上传本地图片直接生成拼图
     function uploadImagesForPuzzle() {
         if (!requireAuth()) return;
         const input = document.createElement('input');
@@ -775,6 +778,7 @@
         input.click();
     }
 
+    // 原有的 dragStart, dropOnCell, rebindUploadButtons, triggerFileUpload, updatePuzzleCanvas, downloadPuzzle 保持不变
     function dragStart(event) {
         draggedCell = event.target.closest('.puzzle-cell');
         event.dataTransfer.setData('text/plain', draggedCell.dataset.index);
@@ -884,7 +888,13 @@
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
 
-    // ========== 权限 UI 优化 ==========
+    // ==========================================
+    // 付费与试用逻辑（完全保留原样，未做任何改动）
+    // ==========================================
+    let currentLockType = null;
+    let lastUserStatus = null;
+    let isUserButtonMounted = false;
+
     function applyLock(type, minutesLeft = 0) {
         const actionArea = document.getElementById('actionArea');
         const normalBtns = document.getElementById('normalBtns');
@@ -956,7 +966,7 @@
         window.location.href = LAF_PAY_URL + "?userid=" + user.id;
     }
 
-    // ========== Clerk 初始化 ==========
+    // Clerk 初始化
     window.addEventListener('load', async function () {
         if (window.Clerk) {
             await Clerk.load();
