@@ -242,7 +242,7 @@
 <script>
     const MEMBER_WHITELIST = ["zhuangshanmeizi@gmail.com", "766307121@qq.com", "1340795703@qq.com", "424198398@qq.com", "595186012@qq.com"];
     
-    let isUserButtonMounted = false, lastUserStatus = null;
+    let isUserButtonMounted = false, lastUserStatus = null, isSignInMounted = false;
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
@@ -252,7 +252,7 @@
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
     function isAuthorized() { const user = window.Clerk?.user; return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress); }
-    function requireAuth() { if (!isAuthorized() && lastUserStatus === 'EXPIRED') { alert('试用结束，请联系管理员或升级会员。'); return false; } return true; }
+    function requireAuth() { if (!isAuthorized() && lastUserStatus === 'EXPIRED') { alert('体验已结束，请先登录或升级会员。'); return false; } return true; }
 
     function revokeAllCardURLs() { document.querySelectorAll('.result-card img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); }); }
     function clearResultGrid() { revokeAllCardURLs(); document.getElementById('resultGrid').innerHTML = ''; updateSelectionUI(); }
@@ -378,7 +378,6 @@
         }
         updatePuzzleCanvas();
     }
-
     function dragStart(ev) { draggedCell = ev.target.closest('.puzzle-cell'); ev.dataTransfer.setData('text/plain', draggedCell.dataset.index); }
     function dropOnCell(ev) {
         ev.preventDefault(); const target = ev.target.closest('.puzzle-cell'); if (!target || !draggedCell || target === draggedCell) return;
@@ -423,42 +422,26 @@
     async function downloadSelected() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-card.selected img'), 'Selected'); }
     async function downloadAll() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-grid img'), 'All'); }
 
-    // ==========================================
-    // 权限锁定逻辑 (核心增强：同时锁定拼图按钮)
-    // ==========================================
     function applyLock(type, minutesLeft = 0) {
         const area = document.getElementById('actionArea'); if (!area) return;
         const old = document.getElementById('login-tip'); if (old) old.remove();
         
-        // 核心修复：将拼图按钮加入锁定数组
-        const btns = [
-            document.getElementById('normalBtns'), 
-            document.getElementById('secondaryBtns'),
-            document.getElementById('generatePuzzleBtn'),
-            document.getElementById('downloadPuzzleBtn')
-        ];
-        
+        const btns = [document.getElementById('normalBtns'), document.getElementById('secondaryBtns'), document.getElementById('generatePuzzleBtn'), document.getElementById('downloadPuzzleBtn')];
         const isLocked = (type === 'NOT_LOGGED_IN' || type === 'EXPIRED');
         
-        btns.forEach(b => { 
-            if(b) { 
-                b.style.opacity = isLocked ? "0.2" : "1"; 
-                b.style.pointerEvents = isLocked ? "none" : "auto"; 
-                b.style.filter = isLocked ? "grayscale(100%)" : "none"; 
-            } 
-        });
+        btns.forEach(b => { if(b) { b.style.opacity = isLocked ? "0.2" : "1"; b.style.pointerEvents = isLocked ? "none" : "auto"; b.style.filter = isLocked ? "grayscale(100%)" : "none"; } });
 
         if (type === 'NOT_LOGGED_IN') showTip("🔒 <b>功能已锁定</b><br><small>登录获取 1 小时试用</small>");
         else if (type === 'EXPIRED') showTip(`⏳ <b>试用结束</b><br><button onclick="payForVIP()" style="margin-top:10px; width:100%; padding:10px; background:#0071e3; color:white; border:none; border-radius:8px; cursor:pointer;">💎 解锁年度会员 (￥9.9)</button>`);
-        else if (type === 'TRIAL') showTip(`✨ <b>体验中</b><br><small>剩余 ${minutesLeft} 分钟</small>`);
-        else showTip(`👑 <b>尊贵会员</b>`);
+        else if (type === 'TRIAL') showTip(`✨ <b>体验中</b><br><small>试用剩余 ${minutesLeft} 分钟</small>`);
+        else showTip(`👑 <b>尊贵会员</b><br><small>感谢支持，无限期使用</small>`);
     }
 
-    function showTip(msg) { const tip = document.createElement('p'); tip.id = "login-tip"; tip.innerHTML = msg; tip.style.cssText = `background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px; padding:20px; text-align:center; margin-bottom:20px; box-shadow:0 8px 32px rgba(0,0,0,0.05); animation:slideIn 0.4s forwards;`; document.getElementById('actionArea').prepend(tip); }
+    function showTip(msg) { const tip = document.createElement('p'); tip.id = "login-tip"; tip.innerHTML = msg; tip.style.cssText = `background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px; padding:20px; text-align:center; margin-bottom:20px; box-shadow:0 8px 32px rgba(0, 0, 0, 0.05); animation:slideIn 0.4s forwards;`; document.getElementById('actionArea').prepend(tip); }
     function payForVIP() { window.location.href = "https://m91iv9q6e6.sealosbja.site/pay?userid=" + Clerk.user.id; }
 
     async function handleUser(user) {
-        if (!isUserButtonMounted) { Clerk.mountUserButton(document.getElementById('user-button'), { afterSignOutUrl: window.location.href }); isUserButtonMounted = true; }
+        if (!isUserButtonMounted) { Clerk.mountUserButton(document.getElementById('user-button'), { afterSignOutUrl: window.location.href.split('?')[0].split('#')[0] }); isUserButtonMounted = true; }
         const isWhite = isAuthorized(), trialEnd = new Date(new Date(user.createdAt).getTime() + 3600000), now = new Date();
         const type = (user.publicMetadata?.isPro || isWhite) ? 'UNLOCK' : (now < trialEnd ? 'TRIAL' : 'EXPIRED');
         const timeLeft = (type === 'TRIAL') ? Math.ceil((trialEnd - now) / 60000) : 0;
@@ -469,8 +452,15 @@
         if (window.Clerk) {
             await Clerk.load();
             Clerk.addListener(({ user }) => {
-                if (user) handleUser(user);
-                else { isUserButtonMounted = false; lastUserStatus = null; applyLock('NOT_LOGGED_IN'); document.getElementById('user-button').innerHTML = ''; Clerk.mountSignIn(document.getElementById('user-button')); }
+                if (user) { isSignInMounted = false; handleUser(user); }
+                else { 
+                    isUserButtonMounted = false; lastUserStatus = null; applyLock('NOT_LOGGED_IN');
+                    if (!isSignInMounted) {
+                        document.getElementById('user-button').innerHTML = ''; 
+                        Clerk.mountSignIn(document.getElementById('user-button'), { afterSignInUrl: window.location.href.split('?')[0].split('#')[0] });
+                        isSignInMounted = true; 
+                    }
+                }
             });
             if (Clerk.user) handleUser(Clerk.user);
         }
