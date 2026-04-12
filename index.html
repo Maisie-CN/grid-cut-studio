@@ -962,29 +962,47 @@
     // ==========================================
     // 【权限锁定逻辑】（增强版）
     // ==========================================
-    function applyLock(type) {
+    function applyLock(type, minutesLeft = 0) {
         const actionArea = document.getElementById('actionArea');
         if (!actionArea) return;
 
         // 彻底清除旧提示
         const oldTip = document.getElementById('login-tip');
-        if(oldTip) oldTip.remove();
+        if (oldTip) oldTip.remove();
 
         if (type === 'NOT_LOGGED_IN') {
             actionArea.style.opacity = "0.2";
             actionArea.style.pointerEvents = "none";
             actionArea.style.filter = "grayscale(100%)";
-            showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号</small>");
-        } else if (type === 'NOT_MEMBER') {
+            showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号以获取 1 小时免费体验</small>");
+            
+        } else if (type === 'EXPIRED') {
             actionArea.style.opacity = "0.2";
             actionArea.style.pointerEvents = "none";
             actionArea.style.filter = "grayscale(100%)";
-            showTip("🚫 <b>暂无会员权限</b><br><small>请联系管理员开通权限</small>");
-        } else {
-            // 解锁
+            // 试用过期，直接在提示框里加上醒目的“支付 9.9 升级”按钮
+            showTip(`
+                ⏳ <b>试用已结束</b><br>
+                <small style="color:var(--apple-gray)">您的 1 小时免费体验已到期</small><br>
+                <button onclick="payForVIP()" class="btn btn-primary" style="margin-top:15px; width:100%; background:var(--apple-orange); box-shadow: 0 4px 15px rgba(255,149,0,0.3);">
+                    💎 支付 9.9 元解锁年度会员
+                </button>
+            `);
+            
+        } else if (type === 'TRIAL') {
             actionArea.style.opacity = "1";
             actionArea.style.pointerEvents = "auto";
             actionArea.style.filter = "none";
+            // 试用中，给一个温柔的倒计时提示，不阻碍用户操作
+            showTip(`✨ <b>免费体验中</b><br><small>您的试用时间还剩 <span style="color:var(--apple-orange); font-weight:bold;">${minutesLeft}</span> 分钟</small>`);
+            
+        } else {
+            // UNLOCK (VIP状态)
+            actionArea.style.opacity = "1";
+            actionArea.style.pointerEvents = "auto";
+            actionArea.style.filter = "none";
+            // VIP尊贵标识，给用户花钱后的情绪价值
+            showTip(`👑 <b style="color:var(--apple-blue)">尊贵的年度会员</b><br><small>感谢您的支持，请尽情创作</small>`);
         }
     }
 
@@ -995,6 +1013,14 @@
         tip.innerHTML = msg;
         tip.style.cssText = "color:var(--apple-orange); text-align:center; margin-bottom:15px; background:rgba(255,149,0,0.1); padding:10px; border-radius:12px; font-size:14px; line-height:1.6";
         actionArea.prepend(tip);
+    }
+
+    function payForVIP() {
+        const user = window.Clerk?.user;
+        if (!user) return alert("请先登录");
+
+        // 我们之后会在这里填入：跳转到虎皮椒/面包多，并带上 user.id 的逻辑
+        alert("准备跳转支付平台... (支付对接完成后生效)\n您的用户ID是：" + user.id); 
     }
 
     // Clerk初始化
@@ -1029,16 +1055,35 @@
             });
 
             function handleUser(user) {
-                Clerk.mountUserButton(userButtonDiv, {
-                    afterSignOutUrl: appHomeUrl,
-                });
-                const email = user.primaryEmailAddress?.emailAddress;
-                if (MEMBER_WHITELIST.includes(email)) {
-                    applyLock('UNLOCK');
-                } else {
-                    applyLock('NOT_MEMBER');
-                }
-            }
+        Clerk.mountUserButton(userButtonDiv, {
+            afterSignOutUrl: appHomeUrl,
+        });
+
+        // 1. 判断是否已经是付费会员（留给未来机器人打标签用）
+        const isPro = user.publicMetadata?.isPro === true;
+
+        // 2. 获取用户注册时间，并计算 1 小时后的到期时间
+        const createdAt = new Date(user.createdAt);
+        const trialDuration = 60 * 60 * 1000; // 1小时的毫秒数 (60分钟 * 60秒 * 1000)
+        const trialEndTime = new Date(createdAt.getTime() + trialDuration);
+        
+        // 3. 获取当前时间
+        const now = new Date();
+
+        // 4. 终极权限判定逻辑
+        if (isPro) {
+            // 是 VIP，直接解锁，不废话
+            applyLock('UNLOCK'); 
+        } else if (now < trialEndTime) {
+            // 不是 VIP，但还在 1 小时试用期内
+            // 计算还剩多少分钟（向上取整）
+            const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
+            applyLock('TRIAL', minutesLeft); 
+        } else {
+            // 不是 VIP，且试用期已过！
+            applyLock('EXPIRED'); 
+        }
+    }
 
             if (Clerk.user) { 
                 handleUser(Clerk.user);
