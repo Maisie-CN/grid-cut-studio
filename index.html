@@ -1064,7 +1064,7 @@
 
         // 2. 获取用户注册时间，并计算 1 小时后的到期时间
         const createdAt = new Date(user.createdAt);
-        const trialDuration = 60 * 60 * 1000; // 1小时的毫秒数 (60分钟 * 60秒 * 1000)
+        const trialDuration = 1 * 60 * 1000; // 1小时的毫秒数 (60分钟 * 60秒 * 1000)
         const trialEndTime = new Date(createdAt.getTime() + trialDuration);
         
         // 3. 获取当前时间
