@@ -971,27 +971,31 @@
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
 
+    
     // ==========================================
-    // 【权限锁定逻辑】（增强版）
+    // 【权限锁定逻辑】（优化后，不再跳动）
     // ==========================================
+    let currentLockType = null; // 记录当前的锁定状态，避免重复渲染
+
     function applyLock(type, minutesLeft = 0) {
         const actionArea = document.getElementById('actionArea');
-        // 单独抓取下面的功能按钮组
         const normalBtns = document.getElementById('normalBtns');
         const secondaryBtns = document.getElementById('secondaryBtns');
         
         if (!actionArea) return;
 
-        // 彻底清除旧提示
+        // 如果状态没变化，直接返回，不重复刷新 UI
+        if (currentLockType === type) return;
+        currentLockType = type;
+
+        // 清除旧提示框（避免重复创建）
         const oldTip = document.getElementById('login-tip');
         if (oldTip) oldTip.remove();
 
-        // 💡 新增一个辅助函数：只把功能按钮变灰，不影响我们弹出的支付按钮
         const setButtonsLock = (isLocked) => {
             const opacity = isLocked ? "0.2" : "1";
             const pointerEvents = isLocked ? "none" : "auto";
             const filter = isLocked ? "grayscale(100%)" : "none";
-            
             if (normalBtns) { 
                 normalBtns.style.opacity = opacity; 
                 normalBtns.style.pointerEvents = pointerEvents; 
@@ -1005,82 +1009,115 @@
         };
 
         if (type === 'NOT_LOGGED_IN') {
-            setButtonsLock(true); // 锁定原按钮
+            setButtonsLock(true);
             showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号以获取 1 小时免费体验</small>");
             
         } else if (type === 'EXPIRED') {
-            setButtonsLock(true); // 锁定原按钮
-            // 此时支付按钮不再受限制，恢复鲜艳的橙色并且可以点击！
+            setButtonsLock(true);
             showTip(`
-    ⏳ <b>试用已结束</b><br>
-    <small style="color:#86868b">您的 1 小时免费体验已到期</small><br>
-    <button onclick="payForVIP()" style="
-        margin-top: 15px;
-        width: 100%;
-        height: 44px;
-        background: #0071e3; /* 苹果经典的蓝色按钮 */
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-weight: 600;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,113,227,0.3);
-    ">
-        💎 解锁年度会员 (￥9.9)
-    </button>
-`);
+                ⏳ <b>试用已结束</b><br>
+                <small style="color:#86868b">您的 1 小时免费体验已到期</small><br>
+                <button onclick="payForVIP()" style="
+                    margin-top: 15px;
+                    width: 100%;
+                    height: 44px;
+                    background: #0071e3;
+                    color: white;
+                    border: none;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(0,113,227,0.3);
+                ">
+                    💎 解锁年度会员 (￥9.9)
+                </button>
+            `);
             
         } else if (type === 'TRIAL') {
-            setButtonsLock(false); // 解锁原按钮
+            setButtonsLock(false);
             showTip(`✨ <b>免费体验中</b><br><small>您的试用时间还剩 <span style="color:var(--apple-orange); font-weight:bold;">${minutesLeft}</span> 分钟</small>`);
             
         } else {
-            // UNLOCK (VIP状态)
-            setButtonsLock(false); // 解锁原按钮
+            // UNLOCK (VIP 状态)
+            setButtonsLock(false);
             showTip(`👑 <b style="color:var(--apple-blue)">尊贵的年度会员</b><br><small>感谢您的支持，请尽情创作</small>`);
         }
     }
 
     function showTip(msg) {
-    // 1. 哨兵检查：如果已经有提示框了，直接退出，不重复创建
-    if (document.getElementById('login-tip')) return;
+        // 防止重复创建（再次检查，保险）
+        if (document.getElementById('login-tip')) return;
 
-    const actionArea = document.getElementById('actionArea');
-    const tip = document.createElement('p');
-    tip.id = "login-tip";
-    tip.innerHTML = msg;
-    
-    // 2. 这里的样式保持你之前的毛玻璃效果
-    tip.style.cssText = `
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 20px;
-        padding: 20px;
-        text-align: center;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-        color: #1d1d1f;
-        font-size: 14px;
-        line-height: 1.6;
-        /* 确保动画只执行一次，不要循环 */
-        animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-    `;
+        const actionArea = document.getElementById('actionArea');
+        const tip = document.createElement('p');
+        tip.id = "login-tip";
+        tip.innerHTML = msg;
+        
+        tip.style.cssText = `
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            color: #1d1d1f;
+            font-size: 14px;
+            line-height: 1.6;
+            animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        `;
 
-    actionArea.prepend(tip);
-}
+        actionArea.prepend(tip);
+    }
 
     // 点击支付按钮时触发
     function payForVIP() {
         const user = window.Clerk?.user;
         if (!user) return alert("请先登录");
-
-        // ⚠️ 把下面引号里的内容，换成你真正在 Sealaf 里复制出来的链接！
-        // 绝对不能有中文字符哦！
         const LAF_PAY_URL = "https://m91iv9q6e6.sealosbja.site/pay"; 
-        
         window.location.href = LAF_PAY_URL + "?userid=" + user.id;
+    }
+
+    // 优化 handleUser，避免重复调用 applyLock
+    let lastUserStatus = null;
+
+    async function handleUser(user) {
+        await user.reload();
+
+        Clerk.mountUserButton(document.getElementById('user-button'), {
+            afterSignOutUrl: window.location.href.split('?')[0].split('#')[0],
+        });
+
+        const isPro = user.publicMetadata?.isPro === true;
+        const createdAt = new Date(user.createdAt);
+        const trialEndTime = new Date(createdAt.getTime() + 60 * 60 * 1000);
+        const now = new Date();
+
+        let newType = 'UNLOCK';
+        if (isPro) {
+            newType = 'UNLOCK';
+        } else if (now < trialEndTime) {
+            const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
+            newType = 'TRIAL';
+            // 存储剩余分钟数，但 applyLock 内会再取一次，这里直接调用并传参
+            applyLock('TRIAL', minutesLeft);
+            return;
+        } else {
+            newType = 'EXPIRED';
+        }
+
+        // 仅当状态真正变化时才调用 applyLock
+        if (lastUserStatus !== newType) {
+            lastUserStatus = newType;
+            if (newType === 'TRIAL') {
+                const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
+                applyLock('TRIAL', minutesLeft);
+            } else {
+                applyLock(newType);
+            }
+        }
     }
 
     // Clerk初始化
@@ -1091,64 +1128,22 @@
             const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; 
             const userButtonDiv = document.getElementById('user-button');
 
-            // 【新增】：加一个标记，防止重复渲染登录框导致界面被重置
             let isSignInMounted = false;
 
             Clerk.addListener(({ user }) => {
                 if (user) {
-                    // 用户已登录
                     handleUser(user);
-                    isSignInMounted = false; // 登录成功后重置标记
+                    isSignInMounted = false;
                 } else {
-                    // 用户未登录，锁定界面
                     applyLock('NOT_LOGGED_IN');
-                    
-                    // 【关键修复】：只有在登录框还没加载时，才去加载它
                     if (!isSignInMounted) {
                         Clerk.mountSignIn(userButtonDiv, {
                             afterSignInUrl: appHomeUrl,
-                            // localization: window.ClerkLocalizations?.zhCN // 如果你用了上面提到的汉化包，可以开启这行
                         });
-                        isSignInMounted = true; // 标记为已加载，下次状态更新就不会再重复刷新了
+                        isSignInMounted = true;
                     }
                 }
             });
-
-            async function handleUser(user) {
-    
-    // 2. 在这里加入这一行，强制刷新用户数据
-    // 这样用户付完钱跳回来，这里就能立刻拿到 isPro = true
-    await user.reload();
-
-    Clerk.mountUserButton(userButtonDiv, {
-        afterSignOutUrl: appHomeUrl,
-    });
-
-        // 1. 判断是否已经是付费会员（留给未来机器人打标签用）
-        const isPro = user.publicMetadata?.isPro === true;
-
-        // 2. 获取用户注册时间，并计算 1 小时后的到期时间
-        const createdAt = new Date(user.createdAt);
-        const trialDuration = 60 * 60 * 1000; // 1小时的毫秒数 (60分钟 * 60秒 * 1000)
-        const trialEndTime = new Date(createdAt.getTime() + trialDuration);
-        
-        // 3. 获取当前时间
-        const now = new Date();
-
-        // 4. 终极权限判定逻辑
-        if (isPro) {
-            // 是 VIP，直接解锁，不废话
-            applyLock('UNLOCK'); 
-        } else if (now < trialEndTime) {
-            // 不是 VIP，但还在 1 小时试用期内
-            // 计算还剩多少分钟（向上取整）
-            const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
-            applyLock('TRIAL', minutesLeft); 
-        } else {
-            // 不是 VIP，且试用期已过！
-            applyLock('EXPIRED'); 
-        }
-    }
 
             if (Clerk.user) { 
                 handleUser(Clerk.user);
