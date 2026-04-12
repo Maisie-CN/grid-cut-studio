@@ -15,242 +15,85 @@
             --apple-gray: #86868b;
         }
 
-        /* 💡 在这里插入动画暗号 */
-    @keyframes slideIn {
-        0% {
-            opacity: 0;
-            transform: translateY(-20px) scale(0.9);
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background-color: var(--apple-bg);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-            color: var(--apple-text);
-            -webkit-font-smoothing: antialiased;
-            padding-bottom: 80px;
-        }
-
+        body { background-color: var(--apple-bg); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; color: var(--apple-text); -webkit-font-smoothing: antialiased; padding-bottom: 80px; }
         .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-
         header { padding: 50px 0 30px; text-align: center; }
         header h1 { font-size: 42px; font-weight: 600; letter-spacing: -0.02em; }
         header p { font-size: 18px; color: var(--apple-gray); margin-top: 8px; }
 
-        .glass-card {
-            background: var(--apple-card);
-            backdrop-filter: blur(30px) saturate(180%);
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.7);
-            border-radius: 28px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
-            margin-bottom: 40px;
-            overflow: hidden;
-        }
-
+        .glass-card { background: var(--apple-card); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,0.7); border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); margin-bottom: 40px; overflow: hidden; }
         .studio-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; padding: 40px; }
-
         .canvas-section { position: relative; }
-        .drop-zone {
-            width: 100%; height: 500px; background: #fff; border-radius: 22px;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
-            position: relative; overflow: hidden; cursor: pointer;
-        }
+        .drop-zone { width: 100%; height: 500px; background: #fff; border-radius: 22px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.05); transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1); position: relative; overflow: hidden; cursor: pointer; }
         .drop-zone.drag-over { border: 2px solid var(--apple-blue); background: rgba(0,113,227,0.03); transform: scale(1.01); }
-        
         canvas { max-width: 96%; max-height: 96%; cursor: crosshair; z-index: 2; border-radius: 4px; }
-        
         .upload-ui { text-align: center; pointer-events: none; }
         .upload-ui .icon { font-size: 60px; margin-bottom: 16px; display: block; opacity: 0.8; }
-        
-        .mode-badge {
-            position: absolute; top: 20px; left: 20px; z-index: 10;
-            background: var(--apple-orange); color: white; padding: 6px 16px;
-            border-radius: 50px; font-size: 13px; font-weight: 600;
-            box-shadow: 0 4px 12px rgba(255,149,0,0.3);
-            display: flex; align-items: center; gap: 8px;
-        }
+        .mode-badge { position: absolute; top: 20px; left: 20px; z-index: 10; background: var(--apple-orange); color: white; padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 12px rgba(255,149,0,0.3); display: flex; align-items: center; gap: 8px; }
 
         .controls { display: flex; flex-direction: column; gap: 24px; }
         .control-group-title { font-size: 11px; font-weight: 700; color: var(--apple-gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
-        
         .stepper-container { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .stepper {
-            background: #fff; padding: 12px 16px; border-radius: 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid rgba(0,0,0,0.04);
-        }
-        .stepper button {
-            width: 32px; height: 32px; border-radius: 50%; border: none;
-            background: var(--apple-bg); color: var(--apple-text);
-            font-size: 18px; cursor: pointer; transition: 0.2s;
-        }
+        .stepper { background: #fff; padding: 12px 16px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(0,0,0,0.04); }
+        .stepper button { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--apple-bg); color: var(--apple-text); font-size: 18px; cursor: pointer; transition: 0.2s; }
         .stepper button:hover { background: #e8e8ed; }
         .stepper input { border: none; width: 30px; text-align: center; font-size: 16px; font-weight: 600; }
 
         .instant-preview { background: rgba(0,0,0,0.02); border-radius: 20px; padding: 20px; }
-        #previewContainer {
-            width: 100%;
-            background: #fff;
-            border: 1px solid rgba(0,0,0,0.05);
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            transition: height 0.3s ease;
-        }
-        .preview-placeholder { 
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--apple-gray); font-size: 12px; gap: 8px; text-align: center; padding: 20px;
-        }
-        .thumb-grid {
-            display: grid; 
-            width: 100%; height: 100%;
-            gap: 2px;
-            padding: 2px;
-        }
+        #previewContainer { width: 100%; background: #fff; border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; position: relative; transition: height 0.3s ease; }
+        .preview-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--apple-gray); font-size: 12px; gap: 8px; text-align: center; padding: 20px; }
+        .thumb-grid { display: grid; width: 100%; height: 100%; gap: 2px; padding: 2px; }
         .thumb-item { width: 100%; height: 100%; background: #f0f0f0; overflow: hidden; }
         .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
 
-        .btn {
-            padding: 14px 20px; border-radius: 14px; font-size: 15px; font-weight: 600;
-            cursor: pointer; border: none; transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
+        .btn { padding: 14px 20px; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--apple-blue); color: #fff; }
         .btn-primary:hover { background: #0077ed; transform: translateY(-1px); }
         .btn-secondary { background: #fff; color: var(--apple-text); border: 1px solid #d2d2d7; }
         .btn-ghost { background: transparent; color: var(--apple-blue); font-size: 13px; font-weight: 600; padding: 4px 8px; cursor: pointer; border: none; }
 
         .result-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 20px; margin-top: 20px; }
-        .result-card {
-            background: #fff; border-radius: 20px; padding: 10px;
-            position: relative; transition: 0.3s cubic-bezier(0.2, 1, 0.3, 1);
-            border: 1px solid rgba(0,0,0,0.03); cursor: pointer;
-        }
+        .result-card { background: #fff; border-radius: 20px; padding: 10px; position: relative; transition: 0.3s cubic-bezier(0.2, 1, 0.3, 1); border: 1px solid rgba(0,0,0,0.03); cursor: pointer; }
         .result-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
         .result-card.selected { border: 2.5px solid var(--apple-blue); background: rgba(0,113,227,0.02); }
-        .result-card.selected::before {
-            content: "✓"; position: absolute; top: -8px; left: -8px;
-            width: 24px; height: 24px; background: var(--apple-blue);
-            color: white; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center; font-weight: bold; font-size: 12px; z-index: 5;
-        }
-
+        .result-card.selected::before { content: "✓"; position: absolute; top: -8px; left: -8px; width: 24px; height: 24px; background: var(--apple-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; z-index: 5; }
         .result-card img { width: 100%; border-radius: 14px; display: block; pointer-events: none; }
-        .card-actions {
-            position: absolute; top: 15px; right: 15px;
-            display: flex; flex-direction: column; gap: 6px;
-            opacity: 0; transform: translateX(8px); transition: 0.3s; z-index: 10;
-        }
+        .card-actions { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 6px; opacity: 0; transform: translateX(8px); transition: 0.3s; z-index: 10; }
         .result-card:hover .card-actions { opacity: 1; transform: translateX(0); }
         .action-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .btn-download { background: var(--apple-blue); color: white; }
         .btn-resplit { background: var(--apple-orange); color: white; }
 
-        /* 新增九宫格拼图样式 */
-        .puzzle-section {
-            margin-top: 60px;
-            padding: 30px;
-            background: var(--apple-card);
-            backdrop-filter: blur(30px) saturate(180%);
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.7);
-            border-radius: 28px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
-        }
-        .puzzle-container {
-            display: flex;
-            gap: 40px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        .puzzle-preview {
-            width: 300px;
-            height: 300px;
-            background: #1d1d1f;
-            border-radius: 24px;
-            display: grid;
-            gap: 4px;
-            padding: 4px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .puzzle-cell {
-            background: #2c2c2e;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative; /* 用于绝对定位上传按钮 */
-        }
-        .puzzle-cell img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .puzzle-cell.empty {
-            background: #1c1c1e;
-        }
-        .puzzle-upload-btn {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 24px;
-            height: 24px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            cursor: pointer;
-            font-size: 16px;
-            line-height: 1;
-            border: none;
-            z-index: 10;
-        }
-        .puzzle-upload-btn:hover {
-            background: var(--apple-blue);
-        }
-        .puzzle-actions {
-            flex: 1;
-        }
-        .puzzle-actions p {
-            color: var(--apple-gray);
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
+        .puzzle-section { margin-top: 60px; padding: 30px; background: var(--apple-card); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,0.7); border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
+        .puzzle-container { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
+        .puzzle-preview { width: 300px; height: 300px; background: #1d1d1f; border-radius: 24px; display: grid; gap: 4px; padding: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .puzzle-cell { background: #2c2c2e; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+        .puzzle-cell img { width: 100%; height: 100%; object-fit: cover; }
+        .puzzle-cell.empty { background: #1c1c1e; }
+        .puzzle-upload-btn { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; font-size: 16px; line-height: 1; border: none; z-index: 10; }
+        .puzzle-upload-btn:hover { background: var(--apple-blue); }
+        .puzzle-actions { flex: 1; }
+        .puzzle-actions p { color: var(--apple-gray); margin-bottom: 20px; line-height: 1.5; }
 
         .hidden { display: none !important; }
         svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     </style>
-
-    <!-- 生产环境 Clerk 脚本 -->
-    <script async
-            crossorigin="anonymous"
-            data-clerk-publishable-key="pk_live_Y2xlcmsuZ3JpZGN1dHN0dWRpby5jbiQ"
-            src="https://clerk.gridcutstudio.cn/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-            type="text/javascript"></script>
+    <script async crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuZ3JpZGN1dHN0dWRpby5jbiQ" src="https://clerk.gridcutstudio.cn/npm/@clerk/clerk-js@5/dist/clerk.browser.js" type="text/javascript"></script>
 </head>
 <body>
 
 <div class="container">
-    <!-- 标题区（居中，副标题已添加“有有特制”） -->
     <header>
         <h1>Grid Cut Studio</h1>
         <p>专业、纯粹的影像拆解工具 · 有有特制</p>
     </header>
 
-    <!-- 头像容器（原位置：标题下方居中） -->
     <div style="display: flex; justify-content: center; margin-bottom: 24px; min-height: 40px;">
         <div id="user-button"></div>
     </div>
@@ -275,7 +118,6 @@
 
             <div class="controls">
                 <button class="btn btn-secondary" onclick="document.getElementById('fileIn').click()">导入图片</button>
-
                 <div>
                     <p class="control-group-title">行列设定</p>
                     <div class="stepper-container">
@@ -327,20 +169,14 @@
             <button class="btn btn-secondary" style="border-radius:40px; padding:8px 20px; font-size:14px;" onclick="downloadAll()">全部打包下载</button>
         </div>
     </div>
-    
     <div class="result-grid" id="resultGrid"></div>
 
-    <!-- 重组拼图模块（支持多种形状） -->
     <div class="puzzle-section">
         <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组拼图</h2>
         <div class="puzzle-container">
-            <div class="puzzle-preview" id="puzzlePreview">
-                <!-- 格子由JS动态填充 -->
-            </div>
+            <div class="puzzle-preview" id="puzzlePreview"></div>
             <div class="puzzle-actions">
                 <p>使用当前选中的切片（最多9张）重组为拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前N张。<br><strong>拖动格子可交换位置，点击格子右上角按钮可上传图片替换。</strong></p>
-                
-                <!-- 拼图形状选择 -->
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">拼图形状：</label>
                     <select id="puzzleShapeSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -349,8 +185,6 @@
                         <option value="2x2">2x2 (4格)</option>
                     </select>
                 </div>
-                
-                <!-- 比例选择 -->
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">下载比例：</label>
                     <select id="puzzleRatioSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -358,7 +192,6 @@
                         <option value="9:16">9:16 竖屏 (1440×2560)</option>
                     </select>
                 </div>
-                
                 <div style="display: flex; gap: 12px;">
                     <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图</button>
                     <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图</button>
@@ -369,145 +202,68 @@
 </div>
 
 <script>
-    // ==========================================
-    // 【会员管理中心】在此修改允许使用的邮箱
-    // ==========================================
-    const MEMBER_WHITELIST = [
-        "zhuangshanmeizi@gmail.com",
-        "766307121@qq.com",
-        "1340795703@qq.com",
-        "424198398@qq.com",
-        "dalaivikas738@gmail.com",
-        "buntsriggsby@gmail.com",
-    ];
+    const MEMBER_WHITELIST = ["zhuangshanmeizi@gmail.com", "766307121@qq.com", "1340795703@qq.com", "424198398@qq.com", "dalaivikas738@gmail.com", "buntsriggsby@gmail.com"];
+    
+    // 状态哨兵：修复菜单消失的关键
+    let isUserButtonMounted = false; 
+    let lastUserStatus = null;
 
-    // ==========================================
-    // 核心状态与工具函数
-    // ==========================================
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
-    let currentSecondaryCard = null; // 存储二次切割对应的卡片元素，用于之后移除
-    // 拼图拖拽相关
-    let draggedCell = null; // 当前正在拖拽的格子
-    let puzzleCanvas = null; // 存储当前拼图画布，用于下载
+    let currentSecondaryCard = null;
+    let draggedCell = null;
+    let puzzleCanvas = null;
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
-    // 权限检查函数
+    // 权限检查
     function isAuthorized() {
         const user = window.Clerk?.user;
         return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress);
     }
+    function requireAuth() { if (!isAuthorized()) { alert('您没有权限执行此操作，请先登录或联系管理员。'); return false; } return true; }
 
-    function requireAuth() {
-        if (!isAuthorized()) {
-            alert('您没有权限执行此操作，请先登录或联系管理员。');
-            return false;
-        }
-        return true;
-    }
+    // 内存优化：释放URL
+    function revokeAllCardURLs() { document.querySelectorAll('.result-card img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); }); }
+    function clearResultGrid() { revokeAllCardURLs(); document.getElementById('resultGrid').innerHTML = ''; updateSelectionUI(); }
+    function updateSelectionUI() { const selected = document.querySelectorAll('.result-card.selected'); const btn = document.getElementById('selectedDownloadBtn'); btn.innerText = `下载选中 (${selected.length})`; btn.style.opacity = selected.length > 0 ? '1' : '0.5'; btn.style.pointerEvents = selected.length > 0 ? 'auto' : 'none'; }
+    function toggleSelect(card) { card.classList.toggle('selected'); updateSelectionUI(); }
 
-    // 释放所有卡片中的对象URL（优化内存）
-    function revokeAllCardURLs() {
-        document.querySelectorAll('.result-card img').forEach(img => {
-            if (img.src.startsWith('blob:')) {
-                URL.revokeObjectURL(img.src);
-            }
-        });
-    }
-
-    // 清除结果网格（同时释放URL）
-    function clearResultGrid() {
-        revokeAllCardURLs();
-        document.getElementById('resultGrid').innerHTML = '';
-        updateSelectionUI();
-    }
-
-    // 更新选中按钮状态
-    function updateSelectionUI() {
-        const selected = document.querySelectorAll('.result-card.selected');
-        const btn = document.getElementById('selectedDownloadBtn');
-        btn.innerText = `下载选中 (${selected.length})`;
-        btn.style.opacity = selected.length > 0 ? '1' : '0.5';
-        btn.style.pointerEvents = selected.length > 0 ? 'auto' : 'none';
-    }
-
-    function toggleSelect(card) { 
-        card.classList.toggle('selected'); 
-        updateSelectionUI(); 
-    }
-
-    // 初始化网格线
+    // 网格与绘图逻辑
     function initLines(w, h) {
         const r = parseInt(document.getElementById('rowsInput').value);
         const c = parseInt(document.getElementById('colsInput').value);
-        linesX = [];
-        linesY = [];
+        linesX = []; linesY = [];
         for(let i=1; i<c; i++) linesX.push((w/c)*i);
         for(let i=1; i<r; i++) linesY.push((h/r)*i);
     }
-
-    // 绘制canvas（带网格线）
     function draw() {
         if(!originalImage) return;
-        if(secondaryMode) {
-            canvas.width = selectedRegion.w;
-            canvas.height = selectedRegion.h;
-            ctx.drawImage(originalImage, selectedRegion.x, selectedRegion.y, selectedRegion.w, selectedRegion.h, 0, 0, selectedRegion.w, selectedRegion.h);
-            ctx.strokeStyle = '#ff9500';
-        } else {
-            canvas.width = originalImage.width;
-            canvas.height = originalImage.height;
-            ctx.drawImage(originalImage, 0, 0);
-            ctx.strokeStyle = '#0071e3';
-        }
-        ctx.setLineDash([12, 6]); 
-        ctx.lineWidth = Math.max(3, canvas.width / 350);
+        if(secondaryMode) { canvas.width = selectedRegion.w; canvas.height = selectedRegion.h; ctx.drawImage(originalImage, selectedRegion.x, selectedRegion.y, selectedRegion.w, selectedRegion.h, 0, 0, selectedRegion.w, selectedRegion.h); ctx.strokeStyle = '#ff9500'; }
+        else { canvas.width = originalImage.width; canvas.height = originalImage.height; ctx.drawImage(originalImage, 0, 0); ctx.strokeStyle = '#0071e3'; }
+        ctx.setLineDash([12, 6]); ctx.lineWidth = Math.max(3, canvas.width / 350);
         linesX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); });
         linesY.forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); });
     }
-
-    // 更新行列
     function updateGrid(type, delta) {
         const input = document.getElementById(type + 'Input');
-        let val = parseInt(input.value) + delta;
-        val = Math.max(1, Math.min(10, val));
-        input.value = val;
-        if(originalImage) {
-            secondaryMode ? initLines(selectedRegion.w, selectedRegion.h) : initLines(originalImage.width, originalImage.height);
-            draw();
-            resetPreview();
-        }
+        let val = parseInt(input.value) + delta; val = Math.max(1, Math.min(10, val)); input.value = val;
+        if(originalImage) { secondaryMode ? initLines(selectedRegion.w, selectedRegion.h) : initLines(originalImage.width, originalImage.height); draw(); resetPreview(); }
     }
 
-    // 重置预览占位
-    function resetPreview() {
-        const container = document.getElementById('previewContainer');
-        container.style.height = '120px';
-        document.getElementById('previewInner').innerHTML = `
-            <div class="preview-placeholder">
-                <svg viewBox="0 0 24 24" style="stroke: #d2d2d7; width:20px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>点击生成预览</span>
-            </div>
-        `;
-    }
-
-    // 生成预览缩略图
+    // 预览逻辑
+    function resetPreview() { const container = document.getElementById('previewContainer'); container.style.height = '120px'; document.getElementById('previewInner').innerHTML = `<div class="preview-placeholder"><svg viewBox="0 0 24 24" style="stroke: #d2d2d7; width:20px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>点击生成预览</span></div>`; }
     function renderPreview() {
         if(!originalImage) return;
         const container = document.getElementById('previewContainer');
-        const inner = document.getElementById('previewInner');
         const currentW = secondaryMode ? selectedRegion.w : originalImage.width;
         const currentH = secondaryMode ? selectedRegion.h : originalImage.height;
-        const ratio = currentH / currentW;
-        const newHeight = Math.min(300, container.offsetWidth * ratio);
-        container.style.height = newHeight + 'px';
+        container.style.height = Math.min(300, container.offsetWidth * (currentH/currentW)) + 'px';
         const rows = parseInt(document.getElementById('rowsInput').value);
         const cols = parseInt(document.getElementById('colsInput').value);
-        inner.innerHTML = `<div class="thumb-grid" id="thumbGrid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);"></div>`;
-        const grid = document.getElementById('thumbGrid');
+        document.getElementById('previewInner').innerHTML = `<div class="thumb-grid" id="thumbGrid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);"></div>`;
         const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width];
         const sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
         for(let i=0; i<sortedY.length-1; i++) {
@@ -515,118 +271,59 @@
                 const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i];
                 if(w<1 || h<1) continue;
                 const off = document.createElement('canvas'); off.width = w; off.height = h;
-                const bx = secondaryMode ? selectedRegion.x + sortedX[j] : sortedX[j];
-                const by = secondaryMode ? selectedRegion.y + sortedY[i] : sortedY[i];
-                off.getContext('2d').drawImage(originalImage, bx, by, w, h, 0, 0, w, h);
-                const div = document.createElement('div');
-                div.className = 'thumb-item';
-                div.innerHTML = `<img src="${off.toDataURL('image/png')}">`;
-                grid.appendChild(div);
+                off.getContext('2d').drawImage(originalImage, secondaryMode ? selectedRegion.x + sortedX[j] : sortedX[j], secondaryMode ? selectedRegion.y + sortedY[i] : sortedY[i], w, h, 0, 0, w, h);
+                const div = document.createElement('div'); div.className = 'thumb-item'; div.innerHTML = `<img src="${off.toDataURL('image/png')}">`;
+                document.getElementById('thumbGrid').appendChild(div);
             }
         }
     }
 
-    // 文件处理
+    // 文件上传
     function handleFile(file) {
         const reader = new FileReader();
         reader.onload = (ev) => {
             const img = new Image();
-            img.onload = () => {
-                originalImage = img;
-                document.getElementById('uploadUI').classList.add('hidden');
-                canvas.classList.remove('hidden');
-                cancelSecondary(); // 退出二次模式
-                initLines(img.width, img.height);
-                draw();
-                resetPreview();
-                clearResultGrid(); // 清空旧切片
-            };
+            img.onload = () => { originalImage = img; document.getElementById('uploadUI').classList.add('hidden'); canvas.classList.remove('hidden'); cancelSecondary(); initLines(img.width, img.height); draw(); resetPreview(); clearResultGrid(); };
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
     }
-
-    // 拖拽事件
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
     dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('drag-over'); });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault(); dropZone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) handleFile(file);
-    });
+    dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); const file = e.dataTransfer.files[0]; if (file && file.type.startsWith('image/')) handleFile(file); });
     dropZone.onclick = (e) => { if(e.target === dropZone || e.target.closest('.upload-ui')) fileIn.click(); };
     fileIn.onchange = (e) => { if(e.target.files[0]) handleFile(e.target.files[0]); };
 
-    // 获取鼠标在canvas上的坐标（考虑缩放）
-    function getMouse(e) { 
-        const rect = canvas.getBoundingClientRect(); 
-        if (rect.width === 0) return { x: 0, y: 0 };
-        return { 
-            x: (e.clientX - rect.left) * (canvas.width / rect.width), 
-            y: (e.clientY - rect.top) * (canvas.height / rect.height) 
-        }; 
-    }
-
-    // 鼠标按下：检测是否点击到线
+    // Canvas 拖拽线
+    function getMouse(e) { const rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
     canvas.onmousedown = (e) => {
         const p = getMouse(e), t = canvas.width / 40;
         linesX.forEach((x, i) => { if(Math.abs(p.x - x) < t) { isDragging = true; dragAxis = 'x'; dragIndex = i; } });
         if(!isDragging) linesY.forEach((y, i) => { if(Math.abs(p.y - y) < t) { isDragging = true; dragAxis = 'y'; dragIndex = i; } });
     };
-
-    // 鼠标移动：拖动线，并限制不越过相邻线
     window.onmousemove = (e) => {
         if(isDragging && originalImage) {
             const p = getMouse(e);
-            if(dragAxis === 'x') {
-                // 限制左右边界
-                let minX = dragIndex > 0 ? linesX[dragIndex-1] + 5 : 5;
-                let maxX = dragIndex < linesX.length-1 ? linesX[dragIndex+1] - 5 : canvas.width - 5;
-                linesX[dragIndex] = Math.max(minX, Math.min(maxX, p.x));
-            } else {
-                let minY = dragIndex > 0 ? linesY[dragIndex-1] + 5 : 5;
-                let maxY = dragIndex < linesY.length-1 ? linesY[dragIndex+1] - 5 : canvas.height - 5;
-                linesY[dragIndex] = Math.max(minY, Math.min(maxY, p.y));
-            }
-            draw();
-            resetPreview();
+            if(dragAxis === 'x') { let minX = dragIndex > 0 ? linesX[dragIndex-1] + 5 : 5; let maxX = dragIndex < linesX.length-1 ? linesX[dragIndex+1] - 5 : canvas.width - 5; linesX[dragIndex] = Math.max(minX, Math.min(maxX, p.x)); }
+            else { let minY = dragIndex > 0 ? linesY[dragIndex-1] + 5 : 5; let maxY = dragIndex < linesY.length-1 ? linesY[dragIndex+1] - 5 : canvas.height - 5; linesY[dragIndex] = Math.max(minY, Math.min(maxY, p.y)); }
+            draw(); resetPreview();
         }
     };
     window.onmouseup = () => { isDragging = false; };
 
-    // 确认拆分（核心功能）
+    // 核心拆分
     function confirmSplit(bx=0, by=0) {
-        if(!originalImage) return alert('请先上传图片');
-        if (!requireAuth()) return; // 权限检查
-
-        const grid = document.getElementById('resultGrid');
-        if(!secondaryMode) {
-            // 普通拆分：清空之前结果
-            clearResultGrid();
-        }
-        const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width];
-        const sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
-        const rows = sortedY.length - 1;
-        const cols = sortedX.length - 1;
-
-        for(let i=0; i<rows; i++) {
-            for(let j=0; j<cols; j++) {
-                const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i];
-                const curX = bx + sortedX[j], curY = by + sortedY[i];
-                const off = document.createElement('canvas'); off.width = w; off.height = h;
-                off.getContext('2d').drawImage(originalImage, curX, curY, w, h, 0, 0, w, h);
-                
-                // 使用toBlob生成对象URL（优化内存）
+        if(!originalImage) return alert('请先上传图片'); if (!requireAuth()) return;
+        const grid = document.getElementById('resultGrid'); if(!secondaryMode) clearResultGrid();
+        const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width], sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
+        for(let i=0; i<sortedY.length-1; i++) {
+            for(let j=0; j<sortedX.length-1; j++) {
+                const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i], curX = bx + sortedX[j], curY = by + sortedY[i];
+                const off = document.createElement('canvas'); off.width = w; off.height = h; off.getContext('2d').drawImage(originalImage, curX, curY, w, h, 0, 0, w, h);
                 off.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const card = document.createElement('div');
-                    card.className = 'result-card';
-                    card.onclick = (e) => { if(!e.target.closest('.action-btn')) toggleSelect(card); };
-                    // 存储坐标和尺寸信息，供二次切割使用
-                    card.dataset.x = curX;
-                    card.dataset.y = curY;
-                    card.dataset.w = w;
-                    card.dataset.h = h;
+                    const url = URL.createObjectURL(blob), card = document.createElement('div');
+                    card.className = 'result-card'; card.onclick = (e) => { if(!e.target.closest('.action-btn')) toggleSelect(card); };
+                    card.dataset.x = curX; card.dataset.y = curY; card.dataset.w = w; card.dataset.h = h;
                     card.innerHTML = `<img src="${url}"><div class="card-actions"><div class="action-btn btn-download" onclick="downloadUrl('${url}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div><div class="action-btn btn-resplit" onclick="startSecondary(this)"><svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg></div></div>`;
                     grid.appendChild(card);
                 });
@@ -635,519 +332,92 @@
         updateSelectionUI();
     }
 
-    // 下载单个图片
-    window.downloadUrl = (url) => { 
-        const a = document.createElement('a'); 
-        a.href = url; 
-        a.download = `slice.png`; 
-        a.click(); 
-    };
-
-    // 下载选中
-    async function downloadSelected() { 
-        if (!requireAuth()) return;
-        const imgs = document.querySelectorAll('.result-card.selected img'); 
-        if(imgs.length > 0) await bundleZip(imgs, 'Selected'); 
-        else alert('请先选中要下载的切片');
-    }
-
-    // 下载全部
-    async function downloadAll() { 
-        if (!requireAuth()) return;
-        const imgs = document.querySelectorAll('.result-grid img'); 
-        if(imgs.length > 0) await bundleZip(imgs, 'Full_Export'); 
-        else alert('请先拆分图片'); 
-    }
-
-    // 打包ZIP
+    // 下载
+    window.downloadUrl = (url) => { const a = document.createElement('a'); a.href = url; a.download = `slice.png`; a.click(); };
+    async function downloadSelected() { if (!requireAuth()) return; const imgs = document.querySelectorAll('.result-card.selected img'); if(imgs.length > 0) await bundleZip(imgs, 'Selected'); else alert('请先选中要下载的切片'); }
+    async function downloadAll() { if (!requireAuth()) return; const imgs = document.querySelectorAll('.result-grid img'); if(imgs.length > 0) await bundleZip(imgs, 'Full_Export'); else alert('请先拆分图片'); }
     async function bundleZip(imgNodes, fileName) {
         const zip = new JSZip();
-        // 将对象URL转换为base64（JSZip需要）
         for (let i = 0; i < imgNodes.length; i++) {
-            const img = imgNodes[i];
-            let dataUrl;
-            if (img.src.startsWith('blob:')) {
-                // 需要将blob转为dataURL
-                const blob = await fetch(img.src).then(r => r.blob());
-                dataUrl = await new Promise(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-            } else {
-                dataUrl = img.src;
-            }
-            const base64 = dataUrl.split(',')[1];
-            zip.file(`piece_${i+1}.png`, base64, {base64:true});
+            const img = imgNodes[i]; let dataUrl = img.src.startsWith('blob:') ? await new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve(r.result); fetch(img.src).then(res => res.blob()).then(b => r.readAsDataURL(b)); }) : img.src;
+            zip.file(`piece_${i+1}.png`, dataUrl.split(',')[1], {base64:true});
         }
-        const blob = await zip.generateAsync({type:'blob'});
-        const a = document.createElement('a'); 
-        a.href = URL.createObjectURL(blob); 
-        a.download = `${fileName}.zip`; 
-        a.click();
-        URL.revokeObjectURL(a.href);
+        const blob = await zip.generateAsync({type:'blob'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${fileName}.zip`; a.click(); URL.revokeObjectURL(a.href);
     }
 
-    // 二次切割入口
+    // 二次切割
     function startSecondary(btn) {
-        const card = btn.closest('.result-card');
-        if (!card) return;
-        currentSecondaryCard = card;
-        const x = parseFloat(card.dataset.x);
-        const y = parseFloat(card.dataset.y);
-        const w = parseFloat(card.dataset.w);
-        const h = parseFloat(card.dataset.h);
-        secondaryMode = true;
-        selectedRegion = {x, y, w, h};
-        document.getElementById('normalBtns').classList.add('hidden');
-        document.getElementById('secondaryBtns').classList.remove('hidden');
-        document.getElementById('modeTag').classList.remove('hidden');
-        initLines(w, h);
-        draw();
-        resetPreview();
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        const card = btn.closest('.result-card'); if (!card) return; currentSecondaryCard = card;
+        const x = parseFloat(card.dataset.x), y = parseFloat(card.dataset.y), w = parseFloat(card.dataset.w), h = parseFloat(card.dataset.h);
+        secondaryMode = true; selectedRegion = {x, y, w, h}; document.getElementById('normalBtns').classList.add('hidden'); document.getElementById('secondaryBtns').classList.remove('hidden'); document.getElementById('modeTag').classList.remove('hidden');
+        initLines(w, h); draw(); resetPreview(); window.scrollTo({top: 0, behavior: 'smooth'});
     }
+    function confirmSecondary() { if (!requireAuth()) return; confirmSplit(selectedRegion.x, selectedRegion.y); if (currentSecondaryCard) { const img = currentSecondaryCard.querySelector('img'); if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); currentSecondaryCard.remove(); currentSecondaryCard = null; } cancelSecondary(); }
+    function cancelSecondary() { secondaryMode = false; selectedRegion = null; currentSecondaryCard = null; document.getElementById('normalBtns').classList.remove('hidden'); document.getElementById('secondaryBtns').classList.add('hidden'); document.getElementById('modeTag').classList.add('hidden'); if(originalImage) { initLines(originalImage.width, originalImage.height); draw(); resetPreview(); } }
 
-    // 完成二次切割
-    function confirmSecondary() {
-        if (!requireAuth()) return;
-        // 调用拆分，传入相对坐标
-        confirmSplit(selectedRegion.x, selectedRegion.y);
-        // 移除原卡片（二次切割后原卡片应该被新切片替代）
-        if (currentSecondaryCard) {
-            // 如果原卡片的图片是blob，记得释放
-            const img = currentSecondaryCard.querySelector('img');
-            if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
-            currentSecondaryCard.remove();
-            currentSecondaryCard = null;
-        }
-        cancelSecondary(); // 退出二次模式
-    }
-
-    // 取消二次切割
-    function cancelSecondary() {
-        secondaryMode = false;
-        selectedRegion = null;
-        currentSecondaryCard = null;
-        document.getElementById('normalBtns').classList.remove('hidden');
-        document.getElementById('secondaryBtns').classList.add('hidden');
-        document.getElementById('modeTag').classList.add('hidden');
-        if(originalImage) { 
-            initLines(originalImage.width, originalImage.height); 
-            draw(); 
-            resetPreview(); 
-        }
-    }
-
-    // ==========================================
-    // 重组拼图功能（支持多种形状和拖拽上传）
-    // ==========================================
-
-    // 生成拼图
+    // 拼图板块功能
     function generatePuzzle() {
-        if (!originalImage) {
-            alert('请先上传图片并拆分切片');
-            return;
+        if (!originalImage) return alert('请先上传图片并拆分切片'); if (!requireAuth()) return;
+        let cards = document.querySelectorAll('.result-card.selected'); if (cards.length === 0) cards = document.querySelectorAll('.result-card'); if (cards.length === 0) return alert('没有可用的切片，请先拆分图片');
+        const shape = document.getElementById('puzzleShapeSelect').value; let rows, cols;
+        if (shape === '3x3') { rows = 3; cols = 3; } else if (shape === '3x2') { rows = 3; cols = 2; } else { rows = 2; cols = 2; }
+        const total = rows * cols, selectedCards = Array.from(cards).slice(0, total), puzzleDiv = document.getElementById('puzzlePreview');
+        puzzleDiv.innerHTML = ''; puzzleDiv.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; puzzleDiv.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        for (let i = 0; i < total; i++) {
+            const cell = document.createElement('div'); cell.className = 'puzzle-cell'; cell.setAttribute('draggable', 'true'); cell.setAttribute('data-index', i); cell.setAttribute('ondragstart', 'dragStart(event)'); cell.setAttribute('ondragover', 'event.preventDefault()'); cell.setAttribute('ondrop', 'dropOnCell(event)');
+            if (i < selectedCards.length) { const newImg = document.createElement('img'); newImg.src = selectedCards[i].querySelector('img').src; cell.appendChild(newImg); } else { cell.classList.add('empty'); }
+            const uploadBtn = document.createElement('button'); uploadBtn.className = 'puzzle-upload-btn'; uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
+            uploadBtn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(uploadBtn); puzzleDiv.appendChild(cell);
         }
-        if (!requireAuth()) return;
-
-        // 获取切片图片元素：优先选中的，否则全部
-        let cards = document.querySelectorAll('.result-card.selected');
-        if (cards.length === 0) {
-            cards = document.querySelectorAll('.result-card');
-        }
-        if (cards.length === 0) {
-            alert('没有可用的切片，请先拆分图片');
-            return;
-        }
-
-        // 获取用户选择的拼图形状
-        const shapeSelect = document.getElementById('puzzleShapeSelect');
-        const shape = shapeSelect.value; // "3x3", "3x2", "2x2"
-        let rows, cols;
-        if (shape === '3x3') { rows = 3; cols = 3; }
-        else if (shape === '3x2') { rows = 3; cols = 2; }
-        else if (shape === '2x2') { rows = 2; cols = 2; }
-        const totalCells = rows * cols;
-
-        // 取前 totalCells 张，不足留空
-        const selectedCards = Array.from(cards).slice(0, totalCells);
-        const puzzleDiv = document.getElementById('puzzlePreview');
-        puzzleDiv.innerHTML = ''; // 清空
-
-        // 设置预览网格的行列数
-        puzzleDiv.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        puzzleDiv.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-
-        // 创建格子
-        for (let i = 0; i < totalCells; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'puzzle-cell';
-            cell.setAttribute('draggable', 'true');
-            cell.setAttribute('data-index', i);
-            cell.setAttribute('ondragstart', 'dragStart(event)');
-            cell.setAttribute('ondragover', 'event.preventDefault()');
-            cell.setAttribute('ondrop', 'dropOnCell(event)');
-
-            // 添加图片内容
-            if (i < selectedCards.length) {
-                const img = selectedCards[i].querySelector('img');
-                const newImg = document.createElement('img');
-                newImg.src = img.src; // 直接使用原图片src
-                cell.appendChild(newImg);
-            } else {
-                cell.classList.add('empty'); // 黑色背景
-            }
-
-            // 添加上传按钮（加号图标）
-            const uploadBtn = document.createElement('button');
-            uploadBtn.className = 'puzzle-upload-btn';
-            uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
-            uploadBtn.onclick = (e) => {
-                e.stopPropagation();
-                triggerFileUpload(cell);
-            };
-            cell.appendChild(uploadBtn);
-
-            puzzleDiv.appendChild(cell);
-        }
-
-        // 更新拼图画布（用于下载）
         updatePuzzleCanvas();
     }
-
-    // 拖拽开始
-    function dragStart(event) {
-        draggedCell = event.target.closest('.puzzle-cell');
-        event.dataTransfer.setData('text/plain', draggedCell.dataset.index);
-        event.dataTransfer.effectAllowed = 'move';
-    }
-
-    // 拖拽放置（在格子上释放）
-    function dropOnCell(event) {
-        event.preventDefault();
-        const targetCell = event.target.closest('.puzzle-cell');
-        if (!targetCell || !draggedCell || targetCell === draggedCell) return;
-
-        // 交换两个格子的内部HTML（图片 + 上传按钮）
-        const tempHTML = targetCell.innerHTML;
-        targetCell.innerHTML = draggedCell.innerHTML;
-        draggedCell.innerHTML = tempHTML;
-
-        // 重新绑定上传按钮的事件（因为innerHTML被替换，原绑定丢失）
-        rebindUploadButtons(targetCell);
-        rebindUploadButtons(draggedCell);
-
-        // 更新拼图画布
-        updatePuzzleCanvas();
-
-        draggedCell = null;
-    }
-
-    // 重新绑定格子内的上传按钮事件
-    function rebindUploadButtons(cell) {
-        const btn = cell.querySelector('.puzzle-upload-btn');
-        if (btn) {
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                triggerFileUpload(cell);
-            };
-        }
-    }
-
-    // 触发文件上传替换格子内容
-    function triggerFileUpload(cell) {
-        // 创建一个临时的文件输入
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        fileInput.style.display = 'none';
-        document.body.appendChild(fileInput);
-
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    // 清空格子内容
-                    cell.innerHTML = '';
-                    // 创建新图片
-                    const img = document.createElement('img');
-                    img.src = ev.target.result;
-                    cell.appendChild(img);
-                    // 重新添加上传按钮
-                    const uploadBtn = document.createElement('button');
-                    uploadBtn.className = 'puzzle-upload-btn';
-                    uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
-                    uploadBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        triggerFileUpload(cell);
-                    };
-                    cell.appendChild(uploadBtn);
-                    cell.classList.remove('empty'); // 移除黑色背景样式
-
-                    // 更新拼图画布
-                    updatePuzzleCanvas();
-                };
-                reader.readAsDataURL(file);
-            }
-            // 用完移除临时元素
-            document.body.removeChild(fileInput);
-        };
-        fileInput.click();
-    }
-
-    // 更新拼图画布（根据所选比例和形状）
+    function dragStart(event) { draggedCell = event.target.closest('.puzzle-cell'); event.dataTransfer.setData('text/plain', draggedCell.dataset.index); event.dataTransfer.effectAllowed = 'move'; }
+    function dropOnCell(event) { event.preventDefault(); const targetCell = event.target.closest('.puzzle-cell'); if (!targetCell || !draggedCell || targetCell === draggedCell) return; const temp = targetCell.innerHTML; targetCell.innerHTML = draggedCell.innerHTML; draggedCell.innerHTML = temp; rebind(targetCell); rebind(draggedCell); updatePuzzleCanvas(); draggedCell = null; }
+    function rebind(cell) { const btn = cell.querySelector('.puzzle-upload-btn'); if (btn) btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); }; }
+    function triggerFileUpload(cell) { const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.style.display = 'none'; document.body.appendChild(fileInput); fileInput.onchange = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (ev) => { cell.innerHTML = ''; const img = document.createElement('img'); img.src = ev.target.result; cell.appendChild(img); const btn = document.createElement('button'); btn.className = 'puzzle-upload-btn'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>'; btn.onclick = (ev2) => { ev2.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(btn); cell.classList.remove('empty'); updatePuzzleCanvas(); }; reader.readAsDataURL(file); } document.body.removeChild(fileInput); }; fileInput.click(); }
     function updatePuzzleCanvas() {
-        const cells = document.querySelectorAll('.puzzle-cell');
-        if (cells.length === 0) return;
-
-        // 获取用户选择的比例
-        const ratioSelect = document.getElementById('puzzleRatioSelect');
-        let width, height;
-        if (ratioSelect && ratioSelect.value === '9:16') {
-            width = 1440;
-            height = 2560;
-        } else {
-            // 默认 16:9
-            width = 2560;
-            height = 1440;
-        }
-
-        // 获取当前拼图形状（行列数）
-        const shapeSelect = document.getElementById('puzzleShapeSelect');
-        const shape = shapeSelect.value;
-        let rows, cols;
-        if (shape === '3x3') { rows = 3; cols = 3; }
-        else if (shape === '3x2') { rows = 3; cols = 2; }
-        else if (shape === '2x2') { rows = 2; cols = 2; }
-
-        // 创建画布
-        puzzleCanvas = document.createElement('canvas');
-        puzzleCanvas.width = width;
-        puzzleCanvas.height = height;
-        const ctx = puzzleCanvas.getContext('2d');
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, width, height);
-
-        const cellWidth = width / cols;
-        const cellHeight = height / rows;
-
-        cells.forEach((cell, index) => {
-            const col = index % cols;
-            const row = Math.floor(index / cols);
-            const img = cell.querySelector('img');
-            if (img) {
-                // 将图片拉伸绘制到整个格子
-                ctx.drawImage(img, col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            } else {
-                // 空单元格保持黑色
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(col * cellWidth, row * cellHeight, cellWidth, cellHeight);
-            }
-        });
+        const cells = document.querySelectorAll('.puzzle-cell'); if (cells.length === 0) return;
+        let width = (document.getElementById('puzzleRatioSelect').value === '9:16') ? 1440 : 2560, height = (document.getElementById('puzzleRatioSelect').value === '9:16') ? 2560 : 1440;
+        const shape = document.getElementById('puzzleShapeSelect').value; let rows = (shape==='3x3'||shape==='3x2')?3:2, cols = (shape==='3x3')?3:2;
+        puzzleCanvas = document.createElement('canvas'); puzzleCanvas.width = width; puzzleCanvas.height = height; const ctxP = puzzleCanvas.getContext('2d'); ctxP.fillStyle = '#000000'; ctxP.fillRect(0, 0, width, height);
+        const cw = width / cols, ch = height / rows; cells.forEach((cell, idx) => { const col = idx % cols, row = Math.floor(idx / cols), img = cell.querySelector('img'); if (img) ctxP.drawImage(img, col * cw, row * ch, cw, ch); });
     }
+    function downloadPuzzle() { if (!puzzleCanvas) return alert('请先生成拼图'); if (!requireAuth()) return; updatePuzzleCanvas(); puzzleCanvas.toBlob((blob) => { const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'puzzle.png'; a.click(); URL.revokeObjectURL(url); }); }
 
-    // 下载拼图
-    function downloadPuzzle() {
-        if (!puzzleCanvas) {
-            alert('请先生成拼图');
-            return;
-        }
-        if (!requireAuth()) return;
-        // 先更新画布，保证内容最新
-        updatePuzzleCanvas();
-        puzzleCanvas.toBlob((blob) => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'puzzle.png';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-    }
-
-    // 防止页面默认拖拽行为
-    document.addEventListener('dragover', (e) => e.preventDefault());
-    document.addEventListener('drop', (e) => e.preventDefault());
-
-    
-    // ==========================================
-    // 【权限锁定逻辑】（优化后，不再跳动）
-    // ==========================================
-    let currentLockType = null; // 记录当前的锁定状态，避免重复渲染
-
+    // 权限锁定
     function applyLock(type, minutesLeft = 0) {
-        const actionArea = document.getElementById('actionArea');
-        const normalBtns = document.getElementById('normalBtns');
-        const secondaryBtns = document.getElementById('secondaryBtns');
-        
-        if (!actionArea) return;
-
-        // 如果状态没变化，直接返回，不重复刷新 UI
-        if (currentLockType === type) return;
-        currentLockType = type;
-
-        // 清除旧提示框（避免重复创建）
-        const oldTip = document.getElementById('login-tip');
-        if (oldTip) oldTip.remove();
-
-        const setButtonsLock = (isLocked) => {
-            const opacity = isLocked ? "0.2" : "1";
-            const pointerEvents = isLocked ? "none" : "auto";
-            const filter = isLocked ? "grayscale(100%)" : "none";
-            if (normalBtns) { 
-                normalBtns.style.opacity = opacity; 
-                normalBtns.style.pointerEvents = pointerEvents; 
-                normalBtns.style.filter = filter; 
-            }
-            if (secondaryBtns) { 
-                secondaryBtns.style.opacity = opacity; 
-                secondaryBtns.style.pointerEvents = pointerEvents; 
-                secondaryBtns.style.filter = filter; 
-            }
-        };
-
-        if (type === 'NOT_LOGGED_IN') {
-            setButtonsLock(true);
-            showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号以获取 1 小时免费体验</small>");
-            
-        } else if (type === 'EXPIRED') {
-            setButtonsLock(true);
-            showTip(`
-                ⏳ <b>试用已结束</b><br>
-                <small style="color:#86868b">您的 1 小时免费体验已到期</small><br>
-                <button onclick="payForVIP()" style="
-                    margin-top: 15px;
-                    width: 100%;
-                    height: 44px;
-                    background: #0071e3;
-                    color: white;
-                    border: none;
-                    border-radius: 10px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(0,113,227,0.3);
-                ">
-                    💎 解锁年度会员 (￥9.9)
-                </button>
-            `);
-            
-        } else if (type === 'TRIAL') {
-            setButtonsLock(false);
-            showTip(`✨ <b>免费体验中</b><br><small>您的试用时间还剩 <span style="color:var(--apple-orange); font-weight:bold;">${minutesLeft}</span> 分钟</small>`);
-            
-        } else {
-            // UNLOCK (VIP 状态)
-            setButtonsLock(false);
-            showTip(`👑 <b style="color:var(--apple-blue)">尊贵的年度会员</b><br><small>感谢您的支持，请尽情创作</small>`);
-        }
+        const actionArea = document.getElementById('actionArea'); if (!actionArea) return;
+        const oldTip = document.getElementById('login-tip'); if (oldTip) oldTip.remove();
+        const normalBtns = document.getElementById('normalBtns'), secondaryBtns = document.getElementById('secondaryBtns');
+        const setLock = (isLocked) => { const op = isLocked ? "0.2" : "1", pe = isLocked ? "none" : "auto", fi = isLocked ? "grayscale(100%)" : "none"; if (normalBtns) { normalBtns.style.opacity = op; normalBtns.style.pointerEvents = pe; normalBtns.style.filter = fi; } if (secondaryBtns) { secondaryBtns.style.opacity = op; secondaryBtns.style.pointerEvents = pe; secondaryBtns.style.filter = fi; } };
+        if (type === 'NOT_LOGGED_IN') { setLock(true); showTip("🔒 <b>功能已锁定</b><br><small>请先在页面上方登录账号以获取 1 小时免费体验</small>"); }
+        else if (type === 'EXPIRED') { setLock(true); showTip(`⏳ <b>试用已结束</b><br><small style="color:#86868b">您的 1 小时免费体验已到期</small><br><button onclick="payForVIP()" style="margin-top: 15px; width: 100%; height: 44px; background: #0071e3; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,113,227,0.3);">💎 解锁年度会员 (￥9.9)</button>`); }
+        else if (type === 'TRIAL') { setLock(false); showTip(`✨ <b>免费体验中</b><br><small>您的试用时间还剩 <span style="color:var(--apple-orange); font-weight:bold;">${minutesLeft}</span> 分钟</small>`); }
+        else { setLock(false); showTip(`👑 <b style="color:var(--apple-blue)">尊贵的年度会员</b><br><small>感谢您的支持，请尽情创作</small>`); }
     }
+    function showTip(msg) { const tip = document.createElement('p'); tip.id = "login-tip"; tip.innerHTML = msg; tip.style.cssText = `background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); color: #1d1d1f; font-size: 14px; line-height: 1.6; animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;`; document.getElementById('actionArea').prepend(tip); }
+    function payForVIP() { const user = window.Clerk?.user; if (!user) return alert("请先登录"); window.location.href = "https://m91iv9q6e6.sealosbja.site/pay?userid=" + user.id; }
 
-    function showTip(msg) {
-        // 防止重复创建（再次检查，保险）
-        if (document.getElementById('login-tip')) return;
-
-        const actionArea = document.getElementById('actionArea');
-        const tip = document.createElement('p');
-        tip.id = "login-tip";
-        tip.innerHTML = msg;
-        
-        tip.style.cssText = `
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-            color: #1d1d1f;
-            font-size: 14px;
-            line-height: 1.6;
-            animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-        `;
-
-        actionArea.prepend(tip);
-    }
-
-    // 点击支付按钮时触发
-    function payForVIP() {
-        const user = window.Clerk?.user;
-        if (!user) return alert("请先登录");
-        const LAF_PAY_URL = "https://m91iv9q6e6.sealosbja.site/pay"; 
-        window.location.href = LAF_PAY_URL + "?userid=" + user.id;
-    }
-
-    // 优化 handleUser，避免重复调用 applyLock
-    let lastUserStatus = null;
-
+    // 核心修复逻辑
     async function handleUser(user) {
-        await user.reload();
-
-        Clerk.mountUserButton(document.getElementById('user-button'), {
-            afterSignOutUrl: window.location.href.split('?')[0].split('#')[0],
-        });
-
-        const isPro = user.publicMetadata?.isPro === true;
-        const createdAt = new Date(user.createdAt);
-        const trialEndTime = new Date(createdAt.getTime() + 60 * 60 * 1000);
-        const now = new Date();
-
-        let newType = 'UNLOCK';
-        if (isPro) {
-            newType = 'UNLOCK';
-        } else if (now < trialEndTime) {
-            const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
-            newType = 'TRIAL';
-            // 存储剩余分钟数，但 applyLock 内会再取一次，这里直接调用并传参
-            applyLock('TRIAL', minutesLeft);
-            return;
-        } else {
-            newType = 'EXPIRED';
+        if (!isUserButtonMounted) {
+            Clerk.mountUserButton(document.getElementById('user-button'), { afterSignOutUrl: window.location.href.split('?')[0].split('#')[0] });
+            isUserButtonMounted = true;
         }
-
-        // 仅当状态真正变化时才调用 applyLock
-        if (lastUserStatus !== newType) {
-            lastUserStatus = newType;
-            if (newType === 'TRIAL') {
-                const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
-                applyLock('TRIAL', minutesLeft);
-            } else {
-                applyLock(newType);
-            }
-        }
+        const trialEndTime = new Date(new Date(user.createdAt).getTime() + 60 * 60 * 1000), now = new Date();
+        let newType = (user.publicMetadata?.isPro === true) ? 'UNLOCK' : (now < trialEndTime ? 'TRIAL' : 'EXPIRED');
+        let minutesLeft = (newType === 'TRIAL') ? Math.ceil((trialEndTime - now) / (60 * 1000)) : 0;
+        if (lastUserStatus !== newType) { lastUserStatus = newType; applyLock(newType, minutesLeft); }
     }
 
-    // Clerk初始化
-    window.addEventListener('load', async function () {
+    window.addEventListener('load', async () => {
         if (window.Clerk) {
-            await Clerk.load();
-
-            const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; 
-            const userButtonDiv = document.getElementById('user-button');
-
-            let isSignInMounted = false;
-
+            await Clerk.load(); const appHomeUrl = window.location.href.split('?')[0].split('#')[0]; let isSignInMounted = false;
             Clerk.addListener(({ user }) => {
-                if (user) {
-                    handleUser(user);
-                    isSignInMounted = false;
-                } else {
-                    applyLock('NOT_LOGGED_IN');
-                    if (!isSignInMounted) {
-                        Clerk.mountSignIn(userButtonDiv, {
-                            afterSignInUrl: appHomeUrl,
-                        });
-                        isSignInMounted = true;
-                    }
-                }
+                if (user) { isSignInMounted = false; handleUser(user); }
+                else { isUserButtonMounted = false; lastUserStatus = null; applyLock('NOT_LOGGED_IN'); if (!isSignInMounted) { document.getElementById('user-button').innerHTML = ''; Clerk.mountSignIn(document.getElementById('user-button'), { afterSignInUrl: appHomeUrl }); isSignInMounted = true; } }
             });
-
-            if (Clerk.user) { 
-                handleUser(Clerk.user);
-            }
+            if (Clerk.user) handleUser(Clerk.user);
         }
     });
 </script>
