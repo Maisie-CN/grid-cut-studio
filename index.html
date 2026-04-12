@@ -62,10 +62,10 @@
             grid-template-columns: 1.2fr 0.8fr; 
             gap: 40px; 
             padding: 40px;
-            align-items: stretch; /* 确保左右高度对齐 */
+            align-items: stretch;
         }
 
-        /* 修改：左侧画布区锁定高度 */
+        /* 左侧画布区锁定高度 */
         .canvas-section { 
             height: 600px; 
             display: flex;
@@ -73,7 +73,7 @@
             position: relative; 
         }
 
-        /* 修改：上传区域撑满父级，防止图片改变框框大小 */
+        /* 上传区域撑满父级 */
         .drop-zone {
             width: 100%; 
             height: 100%; 
@@ -103,12 +103,13 @@
             display: flex; align-items: center; gap: 8px;
         }
 
-        /* 修改：右侧控制区高度100%并开启Flex，实现与左侧等高 */
+        /* -------------------------- 核心优化区域 START -------------------------- */
+        /* 右侧控制区加硬锁，强制与左侧绝对等高 600px */
         .controls { 
             display: flex; 
             flex-direction: column;
             gap: 24px; 
-            height: 100%; 
+            height: 600px; 
         }
         
         .control-group-title { font-size: 11px; font-weight: 700; color: var(--apple-gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
@@ -124,7 +125,7 @@
         .stepper button:hover { background: #e8e8ed; }
         .stepper input { border: none; width: 30px; text-align: center; font-size: 16px; font-weight: 600; }
 
-        /* 修改：预览区域外框自动吸收剩余空间 */
+        /* 预览区域外框自动吸收剩余空间，防止竖图撑破 */
         .instant-preview { 
             background: rgba(0,0,0,0.02); 
             border-radius: 20px; 
@@ -135,7 +136,7 @@
             min-height: 0; 
         }
         
-        /* 修改：预览容器本身充满外框 */
+        /* 预览容器本身充满外框，并防止内部撑破 */
         #previewContainer { 
             width: 100%; 
             flex: 1; 
@@ -144,7 +145,18 @@
             border-radius: 12px;
             overflow: hidden; 
             position: relative; 
+            display: flex;          
+            flex-direction: column; 
+            min-height: 0;          
         }
+
+        /* 针对最内层容器的限制 */
+        #previewInner {
+            width: 100%;
+            flex: 1;
+            min-height: 0; 
+        }
+        /* -------------------------- 核心优化区域 END -------------------------- */
         
         .preview-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--apple-gray); font-size: 12px; gap: 8px; text-align: center; padding: 20px; }
         
@@ -243,10 +255,10 @@
                 <div class="instant-preview">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <p class="control-group-title" style="margin:0">效果预览</p>
-                        <button class="btn-ghost" onclick="renderPreview()">生成预览</button>
+                        <button class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px; border-radius: 10px; min-height: auto;" onclick="renderPreview()">生成预览</button>
                     </div>
                     <div id="previewContainer">
-                        <div id="previewInner" style="height: 100%;">
+                        <div id="previewInner">
                             <div class="preview-placeholder">
                                 <svg viewBox="0 0 24 24" style="stroke: #d2d2d7; width:24px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                 <span>点击查看比例预览</span>
@@ -306,7 +318,7 @@
 </div>
 
 <script>
-    const MEMBER_WHITELIST = ["zhuangshanmeizi@gmail.com", "766307121@qq.com", "1340795703@qq.com", "424198398@qq.com", "595186012@qq.com"];
+    const MEMBER_WHITELIST = ["zhuangshanmeizi@gmail.com", "766307121@qq.com", "1340795703@qq.com", "424198398@qq.com", "dalaivikas738@gmail.com", "buntsriggsby@gmail.com", "595186012@qq.com"];
     
     let isUserButtonMounted = false, lastUserStatus = null, isSignInMounted = false;
     let originalImage = null, linesX = [], linesY = [];
@@ -348,19 +360,15 @@
         if(originalImage) { secondaryMode ? initLines(selectedRegion.w, selectedRegion.h) : initLines(originalImage.width, originalImage.height); draw(); }
     }
 
-    // 生成预览：修改为纯 CSS 控制自适应，移除了 JS 高度干预
+    // 生成预览：去除了之前的 JS 强制高度控制，完全自适应 Flexbox
     function renderPreview() {
         if(!originalImage) return;
         const container = document.getElementById('previewContainer');
-        const currentW = secondaryMode ? selectedRegion.w : originalImage.width, currentH = secondaryMode ? selectedRegion.h : originalImage.height;
-        
-        // 修改点：这里被注释掉了，把高度管理交给 CSS Flexbox
-        // const newHeight = Math.min(300, container.offsetWidth * (currentH / currentW));
-        // container.style.height = newHeight + 'px';
-
         const rows = parseInt(document.getElementById('rowsInput').value), cols = parseInt(document.getElementById('colsInput').value);
+        
         document.getElementById('previewInner').innerHTML = `<div class="thumb-grid" id="thumbGrid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);"></div>`;
         const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width], sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
+        
         for(let i=0; i<sortedY.length-1; i++) {
             for(let j=0; j<sortedX.length-1; j++) {
                 const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i];
