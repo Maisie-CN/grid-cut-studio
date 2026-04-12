@@ -15,6 +15,18 @@
             --apple-gray: #86868b;
         }
 
+        /* 💡 在这里插入动画暗号 */
+    @keyframes slideIn {
+        0% {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.9);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -1000,12 +1012,23 @@
             setButtonsLock(true); // 锁定原按钮
             // 此时支付按钮不再受限制，恢复鲜艳的橙色并且可以点击！
             showTip(`
-                ⏳ <b>试用已结束</b><br>
-                <small style="color:var(--apple-gray)">您的 1 小时免费体验已到期</small><br>
-                <button onclick="payForVIP()" class="btn btn-primary" style="margin-top:15px; width:100%; background:var(--apple-orange); color:white; border:none; box-shadow: 0 4px 15px rgba(255,149,0,0.3); cursor:pointer;">
-                    💎 支付 9.9 元解锁年度会员
-                </button>
-            `);
+    ⏳ <b>试用已结束</b><br>
+    <small style="color:#86868b">您的 1 小时免费体验已到期</small><br>
+    <button onclick="payForVIP()" style="
+        margin-top: 15px;
+        width: 100%;
+        height: 44px;
+        background: #0071e3; /* 苹果经典的蓝色按钮 */
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,113,227,0.3);
+    ">
+        💎 解锁年度会员 (￥9.9)
+    </button>
+`);
             
         } else if (type === 'TRIAL') {
             setButtonsLock(false); // 解锁原按钮
@@ -1023,7 +1046,21 @@
         const tip = document.createElement('p');
         tip.id = "login-tip";
         tip.innerHTML = msg;
-        tip.style.cssText = "color:var(--apple-orange); text-align:center; margin-bottom:15px; background:rgba(255,149,0,0.1); padding:10px; border-radius:12px; font-size:14px; line-height:1.6";
+        tip.style.cssText = `
+    background: rgba(255, 255, 255, 0.7); /* 磨砂玻璃色 */
+    backdrop-filter: blur(12px);          /* 毛玻璃模糊 */
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05); /* 柔和阴影 */
+    color: #1d1d1f;
+    font-size: 14px;
+    line-height: 1.6;
+    animation: slideIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* 弹跳进入动画 */
+`;
         actionArea.prepend(tip);
     }
 
