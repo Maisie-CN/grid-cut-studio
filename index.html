@@ -209,7 +209,6 @@
             <button class="btn btn-secondary" style="border-radius:40px; padding:8px 20px; font-size:14px;" onclick="downloadAll()">全部打包下载</button>
         </div>
     </div>
-    
     <div class="result-grid" id="resultGrid"></div>
 
     <div class="puzzle-section">
@@ -217,8 +216,7 @@
         <div class="puzzle-container">
             <div class="puzzle-preview" id="puzzlePreview"></div>
             <div class="puzzle-actions">
-                <p>使用当前选中的切片（最多9张）重组为拼图，不足部分用黑色填充。若未选中任何切片，则使用全部切片的前N张。<br><strong>拖动格子可交换位置，点击格子右上角按钮可上传图片替换。</strong></p>
-                
+                <p><b>✨ 自由拼图模式</b>：即使不切割图片，也可直接点击下方按钮初始化网格，再点击格子上的 <b>+</b> 号上传本地图片。<br>（支持拖动格子交换位置）</p>
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">拼图形状：</label>
                     <select id="puzzleShapeSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -227,7 +225,6 @@
                         <option value="2x2">2x2 (4格)</option>
                     </select>
                 </div>
-                
                 <div style="margin-bottom: 15px;">
                     <label style="margin-right: 10px; color: var(--apple-gray);">下载比例：</label>
                     <select id="puzzleRatioSelect" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #d2d2d7; background: white;">
@@ -235,9 +232,8 @@
                         <option value="9:16">9:16 竖屏 (1440×2560)</option>
                     </select>
                 </div>
-                
                 <div style="display: flex; gap: 12px;">
-                    <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图</button>
+                    <button id="generatePuzzleBtn" class="btn btn-primary" onclick="generatePuzzle()">生成拼图网格</button>
                     <button id="downloadPuzzleBtn" class="btn btn-secondary" onclick="downloadPuzzle()">下载拼图</button>
                 </div>
             </div>
@@ -246,48 +242,27 @@
 </div>
 
 <script>
-    // ==========================================
-    // 会员白名单与基础状态
-    // ==========================================
-    const MEMBER_WHITELIST = [
-        "zhuangshanmeizi@gmail.com",
-        "766307121@qq.com",
-        "1340795703@qq.com",
-        "424198398@qq.com",// 添加你的账号或指定账号
-    ];
-
+    const MEMBER_WHITELIST = ["zhuangshanmeizi@gmail.com", "766307121@qq.com", "1340795703@qq.com", "424198398@qq.com", "595186012@qq.com"];
+    
+    let isUserButtonMounted = false, lastUserStatus = null;
     let originalImage = null, linesX = [], linesY = [];
     let isDragging = false, dragAxis = null, dragIndex = -1;
     let secondaryMode = false, selectedRegion = null;
-    let currentSecondaryCard = null;
-    let draggedCell = null;
-    let puzzleCanvas = null;
-
-    // --- 核心修复变量：状态哨兵 ---
-    let isUserButtonMounted = false; 
-    let lastUserStatus = null;
+    let currentSecondaryCard = null, draggedCell = null, puzzleCanvas = null;
 
     const canvas = document.getElementById('mainCanvas'), ctx = canvas.getContext('2d');
     const fileIn = document.getElementById('fileIn'), dropZone = document.getElementById('dropZone');
 
-    // 权限检查
-    function isAuthorized() {
-        const user = window.Clerk?.user;
-        const email = user?.primaryEmailAddress?.emailAddress;
-        return email && MEMBER_WHITELIST.includes(email);
-    }
-    function requireAuth() { if (!isAuthorized() && lastUserStatus === 'EXPIRED') { alert('体验已结束，请升级会员。'); return false; } return true; }
+    function isAuthorized() { const user = window.Clerk?.user; return user && MEMBER_WHITELIST.includes(user.primaryEmailAddress?.emailAddress); }
+    function requireAuth() { if (!isAuthorized() && lastUserStatus === 'EXPIRED') { alert('体验已结束，请先登录或升级会员。'); return false; } return true; }
 
-    // 内存优化：释放URL
     function revokeAllCardURLs() { document.querySelectorAll('.result-card img').forEach(img => { if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src); }); }
     function clearResultGrid() { revokeAllCardURLs(); document.getElementById('resultGrid').innerHTML = ''; updateSelectionUI(); }
     function updateSelectionUI() { const selected = document.querySelectorAll('.result-card.selected'); const btn = document.getElementById('selectedDownloadBtn'); btn.innerText = `下载选中 (${selected.length})`; btn.style.opacity = selected.length > 0 ? '1' : '0.5'; btn.style.pointerEvents = selected.length > 0 ? 'auto' : 'none'; }
     function toggleSelect(card) { card.classList.toggle('selected'); updateSelectionUI(); }
 
-    // 网格绘图逻辑
     function initLines(w, h) {
-        const r = parseInt(document.getElementById('rowsInput').value);
-        const c = parseInt(document.getElementById('colsInput').value);
+        const r = parseInt(document.getElementById('rowsInput').value), c = parseInt(document.getElementById('colsInput').value);
         linesX = []; linesY = [];
         for(let i=1; i<c; i++) linesX.push((w/c)*i);
         for(let i=1; i<r; i++) linesY.push((h/r)*i);
@@ -302,23 +277,21 @@
     }
     function updateGrid(type, delta) {
         const input = document.getElementById(type + 'Input');
-        let val = parseInt(input.value) + delta; val = Math.max(1, Math.min(10, val)); input.value = val;
+        let val = Math.max(1, Math.min(10, parseInt(input.value) + delta));
+        input.value = val;
         if(originalImage) { secondaryMode ? initLines(selectedRegion.w, selectedRegion.h) : initLines(originalImage.width, originalImage.height); draw(); resetPreview(); }
     }
 
-    // 预览逻辑
-    function resetPreview() { const container = document.getElementById('previewContainer'); container.style.height = '120px'; document.getElementById('previewInner').innerHTML = `<div class="preview-placeholder"><svg viewBox="0 0 24 24" style="stroke: #d2d2d7; width:24px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>点击生成预览</span></div>`; }
+    function resetPreview() { const container = document.getElementById('previewContainer'); container.style.height = '120px'; document.getElementById('previewInner').innerHTML = `<div class="preview-placeholder"><svg viewBox="0 0 24 24" style="stroke: #d2d2d7; width:20px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>点击生成预览</span></div>`; }
     function renderPreview() {
         if(!originalImage) return;
         const container = document.getElementById('previewContainer');
         const currentW = secondaryMode ? selectedRegion.w : originalImage.width;
         const currentH = secondaryMode ? selectedRegion.h : originalImage.height;
         container.style.height = Math.min(300, container.offsetWidth * (currentH / currentW)) + 'px';
-        const rows = parseInt(document.getElementById('rowsInput').value);
-        const cols = parseInt(document.getElementById('colsInput').value);
+        const rows = parseInt(document.getElementById('rowsInput').value), cols = parseInt(document.getElementById('colsInput').value);
         document.getElementById('previewInner').innerHTML = `<div class="thumb-grid" id="thumbGrid" style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr);"></div>`;
-        const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width];
-        const sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
+        const sortedX = [0, ...[...linesX].sort((a,b)=>a-b), canvas.width], sortedY = [0, ...[...linesY].sort((a,b)=>a-b), canvas.height];
         for(let i=0; i<sortedY.length-1; i++) {
             for(let j=0; j<sortedX.length-1; j++) {
                 const w = sortedX[j+1] - sortedX[j], h = sortedY[i+1] - sortedY[i];
@@ -331,7 +304,6 @@
         }
     }
 
-    // 文件与Canvas交互 [cite: 149-169]
     function handleFile(file) {
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -356,14 +328,13 @@
     window.onmousemove = (e) => {
         if(isDragging && originalImage) {
             const p = getMouse(e);
-            if(dragAxis === 'x') { let minX = dragIndex > 0 ? linesX[dragIndex-1] + 5 : 5; let maxX = dragIndex < linesX.length-1 ? linesX[dragIndex+1] - 5 : canvas.width - 5; linesX[dragIndex] = Math.max(minX, Math.min(maxX, p.x)); }
-            else { let minY = dragIndex > 0 ? linesY[dragIndex-1] + 5 : 5; let maxY = dragIndex < linesY.length-1 ? linesY[dragIndex+1] - 5 : canvas.height - 5; linesY[dragIndex] = Math.max(minY, Math.min(maxY, p.y)); }
+            if(dragAxis === 'x') { let minX = dragIndex > 0 ? linesX[dragIndex-1] + 5 : 5, maxX = dragIndex < linesX.length-1 ? linesX[dragIndex+1] - 5 : canvas.width - 5; linesX[dragIndex] = Math.max(minX, Math.min(maxX, p.x)); }
+            else { let minY = dragIndex > 0 ? linesY[dragIndex-1] + 5 : 5, maxY = dragIndex < linesY.length-1 ? linesY[dragIndex+1] - 5 : canvas.height - 5; linesY[dragIndex] = Math.max(minY, Math.min(maxY, p.y)); }
             draw(); resetPreview();
         }
     };
     window.onmouseup = () => { isDragging = false; };
 
-    // 核心功能：确认拆分 [cite: 170-182]
     function confirmSplit(bx=0, by=0) {
         if(!originalImage) return alert('请先上传图片'); if (!requireAuth()) return;
         const grid = document.getElementById('resultGrid'); if(!secondaryMode) clearResultGrid();
@@ -384,7 +355,6 @@
         updateSelectionUI();
     }
 
-    // 二次切割与拼图逻辑 [cite: 195-262]
     function startSecondary(btn) {
         const card = btn.closest('.result-card'); if (!card) return; currentSecondaryCard = card;
         const x = parseFloat(card.dataset.x), y = parseFloat(card.dataset.y), w = parseFloat(card.dataset.w), h = parseFloat(card.dataset.h);
@@ -394,39 +364,82 @@
     function confirmSecondary() { if (!requireAuth()) return; confirmSplit(selectedRegion.x, selectedRegion.y); if (currentSecondaryCard) { currentSecondaryCard.remove(); currentSecondaryCard = null; } cancelSecondary(); }
     function cancelSecondary() { secondaryMode = false; selectedRegion = null; currentSecondaryCard = null; document.getElementById('normalBtns').classList.remove('hidden'); document.getElementById('secondaryBtns').classList.add('hidden'); document.getElementById('modeTag').classList.add('hidden'); if(originalImage) { initLines(originalImage.width, originalImage.height); draw(); resetPreview(); } }
 
+    // ==========================================
+    // 拼图功能 (已增强：支持空图片生成)
+    // ==========================================
     function generatePuzzle() {
-        if (!originalImage) return alert('请先拆分切片'); if (!requireAuth()) return;
-        let cards = document.querySelectorAll('.result-card.selected'); if (cards.length === 0) cards = document.querySelectorAll('.result-card'); if (cards.length === 0) return alert('没有切片可用');
-        const shape = document.getElementById('puzzleShapeSelect').value; let rows = (shape==='3x3'||shape==='3x2')?3:2, cols = (shape==='3x3')?3:2;
-        const total = rows * cols, selected = Array.from(cards).slice(0, total), div = document.getElementById('puzzlePreview');
+        if (!requireAuth()) return;
+        
+        let cards = document.querySelectorAll('.result-card.selected');
+        if (cards.length === 0) cards = document.querySelectorAll('.result-card');
+        
+        const shape = document.getElementById('puzzleShapeSelect').value;
+        let rows = (shape === '3x3' || shape === '3x2') ? 3 : 2;
+        let cols = (shape === '3x3') ? 3 : 2;
+        const total = rows * cols, selected = Array.from(cards).slice(0, total);
+        
+        const div = document.getElementById('puzzlePreview');
         div.innerHTML = ''; div.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; div.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        
         for (let i = 0; i < total; i++) {
-            const cell = document.createElement('div'); cell.className = 'puzzle-cell'; cell.setAttribute('draggable', 'true'); cell.setAttribute('data-index', i);
+            const cell = document.createElement('div');
+            cell.className = 'puzzle-cell'; cell.setAttribute('draggable', 'true'); cell.setAttribute('data-index', i);
             cell.setAttribute('ondragstart', 'dragStart(event)'); cell.setAttribute('ondragover', 'event.preventDefault()'); cell.setAttribute('ondrop', 'dropOnCell(event)');
-            if (i < selected.length) { const img = document.createElement('img'); img.src = selected[i].querySelector('img').src; cell.appendChild(img); } else { cell.classList.add('empty'); }
-            const btn = document.createElement('button'); btn.className = 'puzzle-upload-btn'; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
-            btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(btn); div.appendChild(cell);
+            if (i < selected.length) { const img = document.createElement('img'); img.src = selected[i].querySelector('img').src; cell.appendChild(img); } 
+            else { cell.classList.add('empty'); }
+            
+            const btn = document.createElement('button'); btn.className = 'puzzle-upload-btn';
+            btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
+            btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); };
+            cell.appendChild(btn); div.appendChild(cell);
         }
         updatePuzzleCanvas();
     }
+
     function dragStart(ev) { draggedCell = ev.target.closest('.puzzle-cell'); ev.dataTransfer.setData('text/plain', draggedCell.dataset.index); }
     function dropOnCell(ev) {
-        ev.preventDefault(); const target = ev.target.closest('.puzzle-cell'); if (!target || !draggedCell || target === draggedCell) return;
+        ev.preventDefault(); const target = ev.target.closest('.puzzle-cell');
+        if (!target || !draggedCell || target === draggedCell) return;
         const temp = target.innerHTML; target.innerHTML = draggedCell.innerHTML; draggedCell.innerHTML = temp;
-        [target, draggedCell].forEach(c => { const b = c.querySelector('.puzzle-upload-btn'); if(b) b.onclick = (e) => { e.stopPropagation(); triggerFileUpload(c); }; });
+        [target, draggedCell].forEach(cell => { const btn = cell.querySelector('.puzzle-upload-btn'); if (btn) btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); }; });
         updatePuzzleCanvas(); draggedCell = null;
     }
-    function triggerFileUpload(cell) { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = (e) => { const f = e.target.files[0]; if(f) { const r = new FileReader(); r.onload = (ex) => { cell.innerHTML = ''; const img = document.createElement('img'); img.src = ex.target.result; cell.appendChild(img); const b = document.createElement('button'); b.className = 'puzzle-upload-btn'; b.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>'; b.onclick = (ev2) => { ev2.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(b); cell.classList.remove('empty'); updatePuzzleCanvas(); }; r.readAsDataURL(f); } }; inp.click(); }
+
+    function triggerFileUpload(cell) {
+        const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+        inp.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const r = new FileReader();
+                r.onload = (ex) => {
+                    cell.innerHTML = ''; const img = document.createElement('img'); img.src = ex.target.result; cell.appendChild(img);
+                    const b = document.createElement('button'); b.className = 'puzzle-upload-btn'; b.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
+                    b.onclick = (ex2) => { ex2.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(b); cell.classList.remove('empty'); updatePuzzleCanvas();
+                };
+                r.readAsDataURL(file);
+            }
+        };
+        inp.click();
+    }
+
     function updatePuzzleCanvas() {
         const cells = document.querySelectorAll('.puzzle-cell'); if (cells.length === 0) return;
-        let w = (document.getElementById('puzzleRatioSelect').value === '9:16') ? 1440 : 2560, h = (document.getElementById('puzzleRatioSelect').value === '9:16') ? 2560 : 1440;
-        const shape = document.getElementById('puzzleShapeSelect').value; let rows = (shape==='3x3'||shape==='3x2')?3:2, cols = (shape==='3x3')?3:2;
-        puzzleCanvas = document.createElement('canvas'); puzzleCanvas.width = w; puzzleCanvas.height = h; const pCtx = puzzleCanvas.getContext('2d'); pCtx.fillStyle = '#000'; pCtx.fillRect(0, 0, w, h);
-        const cw = w / cols, ch = h / rows; cells.forEach((c, i) => { const img = c.querySelector('img'); if(img) pCtx.drawImage(img, (i%cols)*cw, Math.floor(i/cols)*ch, cw, ch); });
+        const ratio = document.getElementById('puzzleRatioSelect').value;
+        let w = (ratio === '9:16') ? 1440 : 2560, h = (ratio === '9:16') ? 2560 : 1440;
+        const shape = document.getElementById('puzzleShapeSelect').value;
+        let rows = (shape === '3x3' || shape === '3x2') ? 3 : 2, cols = (shape === '3x3') ? 3 : 2;
+        puzzleCanvas = document.createElement('canvas'); puzzleCanvas.width = w; puzzleCanvas.height = h;
+        const pCtx = puzzleCanvas.getContext('2d'); pCtx.fillStyle = '#000'; pCtx.fillRect(0, 0, w, h);
+        const cw = w / cols, ch = h / rows;
+        cells.forEach((cell, i) => { const col = i % cols, row = Math.floor(i / cols), img = cell.querySelector('img'); if (img) pCtx.drawImage(img, col * cw, row * ch, cw, ch); });
     }
-    function downloadPuzzle() { if (!puzzleCanvas) return alert('请生成拼图'); if (!requireAuth()) return; updatePuzzleCanvas(); puzzleCanvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'puzzle.png'; a.click(); }); }
 
-    // 下载 ZIP
+    function downloadPuzzle() {
+        if (!puzzleCanvas) return alert('请先生成拼图网格'); if (!requireAuth()) return;
+        updatePuzzleCanvas();
+        puzzleCanvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'puzzle.png'; a.click(); });
+    }
+
     window.downloadUrl = (url) => { const a = document.createElement('a'); a.href = url; a.download = 'slice.png'; a.click(); };
     async function bundleZip(imgNodes, fileName) {
         const zip = new JSZip();
@@ -439,65 +452,35 @@
     async function downloadSelected() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-card.selected img'), 'Selected'); }
     async function downloadAll() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-grid img'), 'All'); }
 
-    // ==========================================
-    // 权限锁定与 Clerk 核心修复
-    // ==========================================
     function applyLock(type, minutesLeft = 0) {
         const area = document.getElementById('actionArea'); if (!area) return;
         const old = document.getElementById('login-tip'); if (old) old.remove();
         const btns = [document.getElementById('normalBtns'), document.getElementById('secondaryBtns')];
-        const setLock = (L) => btns.forEach(b => { if(b) { b.style.opacity = L ? "0.2" : "1"; b.style.pointerEvents = L ? "none" : "auto"; b.style.filter = L ? "grayscale(1)" : "none"; } });
-        
-        if (type === 'NOT_LOGGED_IN') { setLock(true); showTip("🔒 <b>功能已锁定</b><br><small>登录获取 1 小时试用</small>"); }
-        else if (type === 'EXPIRED') { setLock(true); showTip(`⏳ <b>试用结束</b><br><button onclick="payForVIP()" style="margin-top:10px; width:100%; padding:10px; background:#0071e3; color:white; border:none; border-radius:8px; cursor:pointer;">💎 解锁年度会员 (￥9.9)</button>`); }
-        else if (type === 'TRIAL') { setLock(false); showTip(`✨ <b>体验中</b><br><small>试用剩余 ${minutesLeft} 分钟</small>`); }
-        else { setLock(false); showTip(`👑 <b>尊贵会员</b><br><small>感谢支持，无限期使用</small>`); }
+        btns.forEach(b => { if(b) { b.style.opacity = (type==='NOT_LOGGED_IN'||type==='EXPIRED') ? "0.2" : "1"; b.style.pointerEvents = (type==='NOT_LOGGED_IN'||type==='EXPIRED') ? "none" : "auto"; b.style.filter = (type==='NOT_LOGGED_IN'||type==='EXPIRED') ? "grayscale(1)" : "none"; } });
+        if (type === 'NOT_LOGGED_IN') showTip("🔒 <b>功能已锁定</b><br><small>登录获取 1 小时试用</small>");
+        else if (type === 'EXPIRED') showTip(`⏳ <b>试用结束</b><br><button onclick="payForVIP()" style="margin-top:10px; width:100%; padding:10px; background:#0071e3; color:white; border:none; border-radius:8px; cursor:pointer;">💎 解锁年度会员 (￥9.9)</button>`);
+        else if (type === 'TRIAL') showTip(`✨ <b>体验中</b><br><small>剩余 ${minutesLeft} 分钟</small>`);
+        else showTip(`👑 <b>尊贵会员</b>`);
     }
 
-    function showTip(msg) {
-        const tip = document.createElement('p'); tip.id = "login-tip"; tip.innerHTML = msg;
-        tip.style.cssText = `background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px; padding:20px; text-align:center; margin-bottom:20px; box-shadow:0 8px 32px rgba(0,0,0,0.05); animation:slideIn 0.4s forwards;`;
-        document.getElementById('actionArea').prepend(tip);
-    }
-
+    function showTip(msg) { const tip = document.createElement('p'); tip.id = "login-tip"; tip.innerHTML = msg; tip.style.cssText = `background:rgba(255,255,255,0.7); backdrop-filter:blur(12px); border-radius:20px; padding:20px; text-align:center; margin-bottom:20px; box-shadow:0 8px 32px rgba(0,0,0,0.05); animation:slideIn 0.4s forwards;`; document.getElementById('actionArea').prepend(tip); }
     function payForVIP() { window.location.href = "https://m91iv9q6e6.sealosbja.site/pay?userid=" + Clerk.user.id; }
 
-    // --- 修复点击头像消失的核心逻辑 [cite: 289-300] ---
     async function handleUser(user) {
-        // 1. 只有按钮从未挂载时才挂载，防止点击时被后台重绘冲刷
-        if (!isUserButtonMounted) {
-            Clerk.mountUserButton(document.getElementById('user-button'), { 
-                afterSignOutUrl: window.location.href.split('?')[0].split('#')[0] 
-            });
-            isUserButtonMounted = true;
-        }
-
-        // 2. 权限逻辑：付费会员 OR 白名单
-        const isPro = user.publicMetadata?.isPro === true;
+        if (!isUserButtonMounted) { Clerk.mountUserButton(document.getElementById('user-button'), { afterSignOutUrl: window.location.href }); isUserButtonMounted = true; }
         const isWhite = isAuthorized();
-        const trialEnd = new Date(new Date(user.createdAt).getTime() + 3600000);
-        const now = new Date();
-
-        let newType = (isPro || isWhite) ? 'UNLOCK' : (now < trialEnd ? 'TRIAL' : 'EXPIRED');
-        let timeLeft = (newType === 'TRIAL') ? Math.ceil((trialEnd - now) / 60000) : 0;
-
-        // 3. 只有状态真正变化才重绘 UI 提示，避免干扰头像菜单
-        if (lastUserStatus !== newType) {
-            lastUserStatus = newType;
-            applyLock(newType, timeLeft);
-        }
+        const trialEnd = new Date(new Date(user.createdAt).getTime() + 3600000), now = new Date();
+        const type = (user.publicMetadata?.isPro || isWhite) ? 'UNLOCK' : (now < trialEnd ? 'TRIAL' : 'EXPIRED');
+        const timeLeft = (type === 'TRIAL') ? Math.ceil((trialEnd - now) / 60000) : 0;
+        if (lastUserStatus !== type) { lastUserStatus = type; applyLock(type, timeLeft); }
     }
 
     window.addEventListener('load', async () => {
         if (window.Clerk) {
             await Clerk.load();
             Clerk.addListener(({ user }) => {
-                if (user) { handleUser(user); }
-                else { 
-                    isUserButtonMounted = false; lastUserStatus = null; applyLock('NOT_LOGGED_IN');
-                    document.getElementById('user-button').innerHTML = '';
-                    Clerk.mountSignIn(document.getElementById('user-button')); 
-                }
+                if (user) handleUser(user);
+                else { isUserButtonMounted = false; lastUserStatus = null; applyLock('NOT_LOGGED_IN'); document.getElementById('user-button').innerHTML = ''; Clerk.mountSignIn(document.getElementById('user-button')); }
             });
             if (Clerk.user) handleUser(Clerk.user);
         }
