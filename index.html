@@ -1070,10 +1070,15 @@
                 }
             });
 
-            function handleUser(user) {
-        Clerk.mountUserButton(userButtonDiv, {
-            afterSignOutUrl: appHomeUrl,
-        });
+            async function handleUser(user) {
+    
+    // 2. 在这里加入这一行，强制刷新用户数据
+    // 这样用户付完钱跳回来，这里就能立刻拿到 isPro = true
+    await user.reload();
+
+    Clerk.mountUserButton(userButtonDiv, {
+        afterSignOutUrl: appHomeUrl,
+    });
 
         // 1. 判断是否已经是付费会员（留给未来机器人打标签用）
         const isPro = user.publicMetadata?.isPro === true;
