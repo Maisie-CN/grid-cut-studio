@@ -380,6 +380,7 @@
         "dalaivikas738@gmail.com",
         "buntsriggsby@gmail.com",
     ];
+    let isUserButtonMounted = false;
 
     // ==========================================
     // 核心状态与工具函数
@@ -745,21 +746,24 @@
 
     // 生成拼图
     function generatePuzzle() {
-        if (!originalImage) {
-            alert('请先上传图片并拆分切片');
-            return;
-        }
-        if (!requireAuth()) return;
+    if (!originalImage) {
+        alert('请先上传图片并拆分切片');
+        return;
+    }
+    if (!requireAuth()) return;
 
-        // 获取切片图片元素：优先选中的，否则全部
-        let cards = document.querySelectorAll('.result-card.selected');
-        if (cards.length === 0) {
-            cards = document.querySelectorAll('.result-card');
-        }
-        if (cards.length === 0) {
-            alert('没有可用的切片，请先拆分图片');
-            return;
-        }
+    let cards = document.querySelectorAll('.result-card.selected');
+    if (cards.length === 0) {
+        cards = document.querySelectorAll('.result-card');
+    }
+    if (cards.length === 0) {
+        alert('没有可用的切片，请先拆分图片');
+        return;
+    }
+
+    const imageUrls = Array.from(cards).map(card => card.querySelector('img').src);
+    renderPuzzleWithImages(imageUrls);
+}
 
         // 获取用户选择的拼图形状
         const shapeSelect = document.getElementById('puzzleShapeSelect');
@@ -967,6 +971,77 @@
         });
     }
 
+    // 新增：从本地图片直接生成拼图
+function uploadImagesForPuzzle() {
+    if (!requireAuth()) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        const images = await Promise.all(files.map(file => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => resolve(ev.target.result);
+                reader.readAsDataURL(file);
+            });
+        }));
+
+        renderPuzzleWithImages(images);
+    };
+    input.click();
+}
+
+// 通用拼图渲染函数
+function renderPuzzleWithImages(images) {
+    const shapeSelect = document.getElementById('puzzleShapeSelect');
+    const shape = shapeSelect.value;
+    let rows, cols;
+    if (shape === '3x3') { rows = 3; cols = 3; }
+    else if (shape === '3x2') { rows = 3; cols = 2; }
+    else if (shape === '2x2') { rows = 2; cols = 2; }
+    const totalCells = rows * cols;
+
+    const puzzleDiv = document.getElementById('puzzlePreview');
+    puzzleDiv.innerHTML = '';
+    puzzleDiv.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    puzzleDiv.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+    for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'puzzle-cell';
+        cell.setAttribute('draggable', 'true');
+        cell.setAttribute('data-index', i);
+        cell.setAttribute('ondragstart', 'dragStart(event)');
+        cell.setAttribute('ondragover', 'event.preventDefault()');
+        cell.setAttribute('ondrop', 'dropOnCell(event)');
+
+        if (i < images.length) {
+            const img = document.createElement('img');
+            img.src = images[i];
+            cell.appendChild(img);
+        } else {
+            cell.classList.add('empty');
+        }
+
+        const uploadBtn = document.createElement('button');
+        uploadBtn.className = 'puzzle-upload-btn';
+        uploadBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
+        uploadBtn.onclick = (e) => {
+            e.stopPropagation();
+            triggerFileUpload(cell);
+        };
+        cell.appendChild(uploadBtn);
+        puzzleDiv.appendChild(cell);
+    }
+
+    updatePuzzleCanvas();
+}
+    
     // 防止页面默认拖拽行为
     document.addEventListener('dragover', (e) => e.preventDefault());
     document.addEventListener('drop', (e) => e.preventDefault());
@@ -1084,40 +1159,37 @@
     let lastUserStatus = null;
 
     async function handleUser(user) {
-        await user.reload();
+    await user.reload();
 
+    // 只挂载一次用户按钮，避免菜单闪烁
+    if (!isUserButtonMounted) {
         Clerk.mountUserButton(document.getElementById('user-button'), {
             afterSignOutUrl: window.location.href.split('?')[0].split('#')[0],
         });
+        isUserButtonMounted = true;
+    }
 
-        const isPro = user.publicMetadata?.isPro === true;
-        const createdAt = new Date(user.createdAt);
-        const trialEndTime = new Date(createdAt.getTime() + 60 * 60 * 1000);
-        const now = new Date();
+    const isPro = user.publicMetadata?.isPro === true;
+    const createdAt = new Date(user.createdAt);
+    const trialEndTime = new Date(createdAt.getTime() + 60 * 60 * 1000);
+    const now = new Date();
 
-        let newType = 'UNLOCK';
-        if (isPro) {
-            newType = 'UNLOCK';
-        } else if (now < trialEndTime) {
-            const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
-            newType = 'TRIAL';
-            // 存储剩余分钟数，但 applyLock 内会再取一次，这里直接调用并传参
-            applyLock('TRIAL', minutesLeft);
-            return;
-        } else {
-            newType = 'EXPIRED';
-        }
+    let newType = 'UNLOCK';
+    if (isPro) {
+        newType = 'UNLOCK';
+    } else if (now < trialEndTime) {
+        const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
+        applyLock('TRIAL', minutesLeft);
+        return;
+    } else {
+        newType = 'EXPIRED';
+    }
 
-        // 仅当状态真正变化时才调用 applyLock
-        if (lastUserStatus !== newType) {
-            lastUserStatus = newType;
-            if (newType === 'TRIAL') {
-                const minutesLeft = Math.ceil((trialEndTime - now) / (60 * 1000));
-                applyLock('TRIAL', minutesLeft);
-            } else {
-                applyLock(newType);
-            }
-        }
+    if (lastUserStatus !== newType) {
+        lastUserStatus = newType;
+        applyLock(newType);
+    }
+}
     }
 
     // Clerk初始化
