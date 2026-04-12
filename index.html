@@ -1027,12 +1027,16 @@
         actionArea.prepend(tip);
     }
 
+    // 点击支付按钮时触发
     function payForVIP() {
         const user = window.Clerk?.user;
         if (!user) return alert("请先登录");
 
-        // 我们之后会在这里填入：跳转到虎皮椒/面包多，并带上 user.id 的逻辑
-        alert("准备跳转支付平台... (支付对接完成后生效)\n您的用户ID是：" + user.id); 
+        // ⚠️ 替换为你刚才第一步里发布的 Laf 【pay】 函数的链接
+        const LAF_PAY_URL = "https://你的应用前缀.sealos.run/pay"; 
+        
+        // 带着用户的 ID 跳转到我们的 Laf 收银台
+        window.location.href = LAF_PAY_URL + "?userid=" + user.id;
     }
 
     // Clerk初始化
