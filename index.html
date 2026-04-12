@@ -107,21 +107,20 @@
         .btn-download { background: var(--apple-blue); color: white; }
         .btn-resplit { background: var(--apple-orange); color: white; }
 
-        /* 重组拼图新样式（支持间隔与精排） [cite: 64-78] */
+        /* 重组拼图新样式 [cite: 64, 65] */
         .puzzle-section { margin-top: 60px; padding: 30px; background: var(--apple-card); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,0.7); border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
         .puzzle-container { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; justify-content: flex-start; }
         
-        /* 预览区容器：增加排版间隔感 [cite: 67-68] */
         .puzzle-preview-box { width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); border-radius: 24px; overflow: hidden; padding: 20px; }
-        .puzzle-preview { background: #1d1d1f; border-radius: 12px; display: grid; gap: 8px; padding: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* 【修改点：gap 和 padding 调小为 4px】  */
+        .puzzle-preview { background: #1d1d1f; border-radius: 12px; display: grid; gap: 4px; padding: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        .puzzle-cell { background: #2c2c2e; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; transition: transform 0.2s; }
+        .puzzle-cell { background: #2c2c2e; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; transition: transform 0.2s; }
         .puzzle-cell img { width: 100%; height: 100%; object-fit: cover; }
         .puzzle-cell.empty { background: #1c1c1e; }
         .puzzle-upload-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; border: none; z-index: 10; opacity: 0.6; transition: 0.2s; }
         .puzzle-upload-btn:hover { opacity: 1; background: var(--apple-blue); }
 
-        /* 分段选择器 [cite: 246] */
         .option-group { display: flex; background: #e8e8ed; padding: 4px; border-radius: 12px; gap: 4px; margin-bottom: 20px; width: fit-content; }
         .option-item { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--apple-gray); border: none; background: transparent; }
         .option-item.active { background: #fff; color: var(--apple-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -139,7 +138,7 @@
 <div class="container">
     <header>
         <h1>Grid Cut Studio</h1>
-        <p>专业、纯粹的影像拆解工具 · 有有特制</p>
+        <p>专业、纯粹的影像拆解工具 · 有有特制 [cite: 81]</p>
     </header>
 
     <div style="display: flex; justify-content: center; margin-bottom: 24px; min-height: 40px;">
@@ -167,7 +166,7 @@
             <div class="controls">
                 <button class="btn btn-secondary" onclick="document.getElementById('fileIn').click()">导入图片</button>
                 <div>
-                    <p class="control-group-title">行列设定</p>
+                    <p class="control-group-title">行列设定 [cite: 86]</p>
                     <div class="stepper-container">
                         <div class="stepper">
                             <button onclick="updateGrid('rows', -1)">-</button>
@@ -184,7 +183,7 @@
 
                 <div class="instant-preview">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <p class="control-group-title" style="margin:0">效果预览</p>
+                        <p class="control-group-title" style="margin:0">效果预览 [cite: 91]</p>
                         <button class="btn-ghost" onclick="renderPreview()">生成预览</button>
                     </div>
                     <div id="previewContainer" style="height: 120px;">
@@ -211,7 +210,7 @@
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px;">
-        <h2 style="font-size: 26px; font-weight: 600;">已拆分切片</h2>
+        <h2 style="font-size: 26px; font-weight: 600;">已拆分切片 [cite: 99, 100]</h2>
         <div style="display:flex; gap:12px;">
             <button id="selectedDownloadBtn" class="btn btn-primary" style="border-radius:40px; padding:8px 24px; font-size:14px; opacity: 0.5; pointer-events: none;" onclick="downloadSelected()">下载选中 (0)</button>
             <button class="btn btn-secondary" style="border-radius:40px; padding:8px 20px; font-size:14px;" onclick="downloadAll()">全部打包下载</button>
@@ -220,14 +219,14 @@
     <div class="result-grid" id="resultGrid"></div>
 
     <div class="puzzle-section">
-        <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组拼图</h2>
+        <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组拼图 [cite: 104]</h2>
         <div class="puzzle-container">
             <div class="puzzle-preview-box">
                 <div class="puzzle-preview" id="puzzlePreview" style="width: 300px; height: 168.75px;"></div>
             </div>
 
             <div class="puzzle-actions">
-                <p><b>✨ 自由拼图模式</b>：直接点击下方按钮初始化网格，再点击格子上的 <b>+</b> 号上传本地图片。<br>（支持拖动格子交换位置，显示精排间隔）</p>
+                <p><b>✨ 自由拼图模式</b>：直接点击下方按钮初始化网格，再点击格子上的 <b>+</b> 号上传本地图片。<br>（支持拖动格子交换位置，显示精排间隔） [cite: 105]</p>
                 
                 <p class="control-group-title">拼图形状</p>
                 <div class="option-group" id="shapeOptions">
@@ -360,9 +359,6 @@
     function confirmSecondary() { if (!requireAuth()) return; confirmSplit(selectedRegion.x, selectedRegion.y); if (currentSecondaryCard) { currentSecondaryCard.remove(); currentSecondaryCard = null; } cancelSecondary(); }
     function cancelSecondary() { secondaryMode = false; selectedRegion = null; currentSecondaryCard = null; document.getElementById('normalBtns').classList.remove('hidden'); document.getElementById('secondaryBtns').classList.add('hidden'); document.getElementById('modeTag').classList.add('hidden'); if(originalImage) { initLines(originalImage.width, originalImage.height); draw(); renderPreview(); } }
 
-    // ==========================================
-    // 拼图功能 (增强：精排间隔显示)
-    // ==========================================
     function selectPuzzleOption(type, value, el) {
         const group = el.parentElement;
         group.querySelectorAll('.option-item').forEach(item => item.classList.remove('active'));
@@ -436,14 +432,14 @@
         inp.click();
     }
 
-    // 更新拼图画布：加入物理间隔渲染 [cite: 254-255]
+    // 更新拼图画布：渲染导出图片 [cite: 254, 255, 256, 257]
     function updatePuzzleCanvas() {
         const cells = document.querySelectorAll('.puzzle-cell'); if (cells.length === 0) return;
         let w = (currentPuzzleRatio === '9:16') ? 1440 : 2560, h = (currentPuzzleRatio === '9:16') ? 2560 : 1440;
         let rows = (currentPuzzleShape === '3x3' || currentPuzzleShape === '3x2') ? 3 : 2, cols = (currentPuzzleShape === '3x3') ? 3 : 2;
         
-        // 设置间隔大小：约占总宽度的 1%
-        const physicalGap = Math.floor(w * 0.012); 
+        // 【修改点：physicalGap 调小为 0.006】
+        const physicalGap = Math.floor(w * 0.006); 
         const innerW = w - (cols + 1) * physicalGap;
         const innerH = h - (rows + 1) * physicalGap;
         const cellW = innerW / cols, cellH = innerH / rows;
