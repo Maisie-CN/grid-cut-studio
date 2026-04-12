@@ -107,24 +107,27 @@
         .btn-download { background: var(--apple-blue); color: white; }
         .btn-resplit { background: var(--apple-orange); color: white; }
 
-        /* 重组拼图新样式 */
+        /* 重组拼图新样式（支持间隔与精排） [cite: 64-78] */
         .puzzle-section { margin-top: 60px; padding: 30px; background: var(--apple-card); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,0.7); border-radius: 28px; box-shadow: 0 10px 40px rgba(0,0,0,0.04); }
         .puzzle-container { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; justify-content: flex-start; }
         
-        /* 比例动态容器 */
-        .puzzle-preview-box { width: 320px; height: 320px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); border-radius: 24px; overflow: hidden; }
-        .puzzle-preview { background: #1d1d1f; border-radius: 12px; display: grid; gap: 4px; padding: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* 预览区容器：增加排版间隔感 [cite: 67-68] */
+        .puzzle-preview-box { width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.03); border-radius: 24px; overflow: hidden; padding: 20px; }
+        .puzzle-preview { background: #1d1d1f; border-radius: 12px; display: grid; gap: 8px; padding: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        .puzzle-cell { background: #2c2c2e; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+        .puzzle-cell { background: #2c2c2e; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; transition: transform 0.2s; }
         .puzzle-cell img { width: 100%; height: 100%; object-fit: cover; }
         .puzzle-cell.empty { background: #1c1c1e; }
         .puzzle-upload-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; border: none; z-index: 10; opacity: 0.6; transition: 0.2s; }
         .puzzle-upload-btn:hover { opacity: 1; background: var(--apple-blue); }
 
-        /* 分段选择器样式 */
+        /* 分段选择器 [cite: 246] */
         .option-group { display: flex; background: #e8e8ed; padding: 4px; border-radius: 12px; gap: 4px; margin-bottom: 20px; width: fit-content; }
         .option-item { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--apple-gray); border: none; background: transparent; }
         .option-item.active { background: #fff; color: var(--apple-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        .puzzle-actions { flex: 1; min-width: 300px; }
+        .puzzle-actions p { color: var(--apple-gray); margin-bottom: 20px; line-height: 1.5; font-size: 14px; }
 
         .hidden { display: none !important; }
         svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -220,11 +223,11 @@
         <h2 style="font-size: 26px; font-weight: 600; margin-bottom: 20px;">重组拼图</h2>
         <div class="puzzle-container">
             <div class="puzzle-preview-box">
-                <div class="puzzle-preview" id="puzzlePreview" style="width: 280px; height: 157.5px;"></div>
+                <div class="puzzle-preview" id="puzzlePreview" style="width: 300px; height: 168.75px;"></div>
             </div>
 
             <div class="puzzle-actions">
-                <p><b>✨ 自由拼图模式</b>：即使不切割图片，也可直接点击下方按钮初始化网格，再点击格子上的 <b>+</b> 号上传本地图片。<br>（支持拖动格子交换位置）</p>
+                <p><b>✨ 自由拼图模式</b>：直接点击下方按钮初始化网格，再点击格子上的 <b>+</b> 号上传本地图片。<br>（支持拖动格子交换位置，显示精排间隔）</p>
                 
                 <p class="control-group-title">拼图形状</p>
                 <div class="option-group" id="shapeOptions">
@@ -257,7 +260,6 @@
     let secondaryMode = false, selectedRegion = null;
     let currentSecondaryCard = null, draggedCell = null, puzzleCanvas = null;
 
-    // 拼图当前选中项
     let currentPuzzleShape = '3x3';
     let currentPuzzleRatio = '16:9';
 
@@ -359,38 +361,31 @@
     function cancelSecondary() { secondaryMode = false; selectedRegion = null; currentSecondaryCard = null; document.getElementById('normalBtns').classList.remove('hidden'); document.getElementById('secondaryBtns').classList.add('hidden'); document.getElementById('modeTag').classList.add('hidden'); if(originalImage) { initLines(originalImage.width, originalImage.height); draw(); renderPreview(); } }
 
     // ==========================================
-    // 拼图功能 (UI 联动增强版)
+    // 拼图功能 (增强：精排间隔显示)
     // ==========================================
     function selectPuzzleOption(type, value, el) {
-        // 更新 UI 状态
         const group = el.parentElement;
         group.querySelectorAll('.option-item').forEach(item => item.classList.remove('active'));
         el.classList.add('active');
 
-        // 更新变量
         if (type === 'shape') currentPuzzleShape = value;
         if (type === 'ratio') currentPuzzleRatio = value;
 
-        // 联动更新预览区宽高比 [cite: 67, 246]
         const preview = document.getElementById('puzzlePreview');
         if (currentPuzzleRatio === '16:9') {
-            preview.style.width = '280px';
-            preview.style.height = '157.5px';
+            preview.style.width = '300px';
+            preview.style.height = '168.75px';
         } else {
-            preview.style.width = '168px';
+            preview.style.width = '168.75px';
             preview.style.height = '300px';
         }
 
-        // 自动重绘网格
         generatePuzzle();
     }
 
     function generatePuzzle() {
         if (!requireAuth()) return;
-        
-        let cards = document.querySelectorAll('.result-card.selected');
-        if (cards.length === 0) cards = document.querySelectorAll('.result-card');
-        
+        let cards = document.querySelectorAll('.result-card.selected'); if (cards.length === 0) cards = document.querySelectorAll('.result-card');
         const shape = currentPuzzleShape;
         let rows = (shape === '3x3' || shape === '3x2') ? 3 : 2;
         let cols = (shape === '3x3') ? 3 : 2;
@@ -405,11 +400,9 @@
             const cell = document.createElement('div');
             cell.className = 'puzzle-cell'; cell.setAttribute('draggable', 'true'); cell.setAttribute('data-index', i);
             cell.setAttribute('ondragstart', 'dragStart(event)'); cell.setAttribute('ondragover', 'event.preventDefault()'); cell.setAttribute('ondrop', 'dropOnCell(event)');
-            
             if (i < selected.length) { 
                 const img = document.createElement('img'); img.src = selected[i].querySelector('img').src; cell.appendChild(img); 
             } else { cell.classList.add('empty'); }
-            
             const btn = document.createElement('button'); btn.className = 'puzzle-upload-btn';
             btn.innerHTML = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
             btn.onclick = (e) => { e.stopPropagation(); triggerFileUpload(cell); };
@@ -420,8 +413,7 @@
 
     function dragStart(ev) { draggedCell = ev.target.closest('.puzzle-cell'); ev.dataTransfer.setData('text/plain', draggedCell.dataset.index); }
     function dropOnCell(ev) {
-        ev.preventDefault(); const target = ev.target.closest('.puzzle-cell');
-        if (!target || !draggedCell || target === draggedCell) return;
+        ev.preventDefault(); const target = ev.target.closest('.puzzle-cell'); if (!target || !draggedCell || target === draggedCell) return;
         const temp = target.innerHTML; target.innerHTML = draggedCell.innerHTML; draggedCell.innerHTML = temp;
         [target, draggedCell].forEach(c => { const b = c.querySelector('.puzzle-upload-btn'); if (b) b.onclick = (e) => { e.stopPropagation(); triggerFileUpload(c); }; });
         updatePuzzleCanvas(); draggedCell = null;
@@ -435,7 +427,7 @@
                 const r = new FileReader();
                 r.onload = (ex) => {
                     cell.innerHTML = ''; const img = document.createElement('img'); img.src = ex.target.result; cell.appendChild(img);
-                    const b = document.createElement('button'); b.className = 'puzzle-upload-btn'; b.innerHTML = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
+                    const b = document.createElement('button'); b.className = 'puzzle-upload-btn'; b.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg>';
                     b.onclick = (ex2) => { ex2.stopPropagation(); triggerFileUpload(cell); }; cell.appendChild(b); cell.classList.remove('empty'); updatePuzzleCanvas();
                 };
                 r.readAsDataURL(file);
@@ -444,16 +436,29 @@
         inp.click();
     }
 
+    // 更新拼图画布：加入物理间隔渲染 [cite: 254-255]
     function updatePuzzleCanvas() {
         const cells = document.querySelectorAll('.puzzle-cell'); if (cells.length === 0) return;
         let w = (currentPuzzleRatio === '9:16') ? 1440 : 2560, h = (currentPuzzleRatio === '9:16') ? 2560 : 1440;
-        let rows = (currentPuzzleShape === '3x3' || currentPuzzleShape === '3x2') ? 3 : 2;
-        let cols = (currentPuzzleShape === '3x3') ? 3 : 2;
+        let rows = (currentPuzzleShape === '3x3' || currentPuzzleShape === '3x2') ? 3 : 2, cols = (currentPuzzleShape === '3x3') ? 3 : 2;
         
+        // 设置间隔大小：约占总宽度的 1%
+        const physicalGap = Math.floor(w * 0.012); 
+        const innerW = w - (cols + 1) * physicalGap;
+        const innerH = h - (rows + 1) * physicalGap;
+        const cellW = innerW / cols, cellH = innerH / rows;
+
         puzzleCanvas = document.createElement('canvas'); puzzleCanvas.width = w; puzzleCanvas.height = h;
         const pCtx = puzzleCanvas.getContext('2d'); pCtx.fillStyle = '#000'; pCtx.fillRect(0, 0, w, h);
-        const cw = w / cols, ch = h / rows;
-        cells.forEach((cell, i) => { const col = i % cols, row = Math.floor(i / cols), img = cell.querySelector('img'); if (img) pCtx.drawImage(img, col * cw, row * ch, cw, ch); });
+
+        cells.forEach((cell, i) => { 
+            const col = i % cols, row = Math.floor(i / cols), img = cell.querySelector('img'); 
+            if (img) {
+                const drawX = physicalGap + col * (cellW + physicalGap);
+                const drawY = physicalGap + row * (cellH + physicalGap);
+                pCtx.drawImage(img, drawX, drawY, cellW, cellH); 
+            }
+        });
     }
 
     function downloadPuzzle() { if (!puzzleCanvas) return alert('请先生成拼图网格'); if (!requireAuth()) return; updatePuzzleCanvas(); puzzleCanvas.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'puzzle.png'; a.click(); }); }
@@ -469,7 +474,6 @@
     async function downloadSelected() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-card.selected img'), 'Selected'); }
     async function downloadAll() { if (requireAuth()) bundleZip(document.querySelectorAll('.result-grid img'), 'All'); }
 
-    // 权限管理
     function applyLock(type, minutesLeft = 0) {
         const area = document.getElementById('actionArea'); if (!area) return;
         const old = document.getElementById('login-tip'); if (old) old.remove();
